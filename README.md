@@ -1,10 +1,4 @@
-<div align="center">
-  <img width="100%" alt="Gridd360 Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-  <h1>🚀 Gridd360 Asset Manager</h1>
-  <p><strong>A plataforma definitiva para gestão de ativos digitais, integrada com Google Photos e Supabase.</strong></p>
-</div>
 
----
 
 ## 📖 Visão Geral
 
@@ -123,5 +117,5 @@ Use o método `DataService.logActivity(userId, action, targetName)` disponível 
 
 <div align="center">
   <p>Desenvolvido com ❤️ pela equipe Gridd360</p>
-  <p><strong>Copyright © 2024 - Gridd360 Asset Manager</strong></p>
+  <p><strong>Copyright © 2025 - Gridd360 - HN Performance Digital </strong></p>
 </div>

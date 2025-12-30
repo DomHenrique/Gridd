@@ -87,14 +87,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                   style={{ backgroundColor: BRAND.primaryColor }}
                   onClick={() => setIsLeadModalOpen(true)}
                 >
-                  <i className="bi bi-chat-dots me-2"></i>Solicitar Demonstração
+                  <i className="bi bi-chat-dots me-2"></i>Fale com a gente
                 </button>
-                <button 
-                  className="btn btn-lg px-5 py-3 fw-bold text-white border border-white-50 bg-white bg-opacity-10 backdrop-blur"
-                  onClick={() => setIsLeadModalOpen(true)}
-                >
-                  Falar com Especialista
-                </button>
+                
               </div>
             </div>
           </div>
@@ -251,7 +246,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
         <div className="container-lg px-4">
           <div className="row">
             <div className="col-md-6">
-              <p className="fw-bold">© 2025 Gridd360. Todos os direitos reservados.</p>
+              <p className="fw-bold">© 2025 Gridd360-HN Performance Digital. Todos os direitos reservados.</p>
             </div>
             <div className="col-md-6 text-md-end">
               <div className="d-flex gap-3 justify-content-md-end align-items-center">
