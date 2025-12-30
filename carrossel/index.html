@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrossel Flex com Card Fixo</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: #101014;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .carousel {
+    display: flex;
+    width: 80%;
+    overflow: hidden;
+    position: relative;
+    border-radius: 20px;
+    background: #181820;
+    padding: 20px;
+  }
+
+  .cards {
+    display: flex;
+    gap: 20px;
+    animation: moveLeft 10s linear infinite;
+  }
+
+  .card {
+    flex: 0 0 200px;
+    height: 250px;
+    background: linear-gradient(135deg, #3f51b5, #2196f3);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+  }
+
+  .card:hover {
+    transform: scale(1.05);
+  }
+
+  /* Último card fixo à direita */
+  .card:last-child {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    bottom: 20px;
+    margin: auto 0;
+    background: linear-gradient(135deg, #ff9800, #ff5722);
+    z-index: 2;
+  }
+
+  /* Animação de deslocamento */
+  @keyframes moveLeft {
+    0% { transform: translateX(0); }
+    40% { transform: translateX(-30%); }
+    60% { transform: translateX(-30%); }
+    100% { transform: translateX(0); }
+  }
+
+  /* Direção reversa (ida e volta) */
+  .carousel:hover .cards {
+    animation: moveRight 10s linear infinite;
+  }
+
+  @keyframes moveRight {
+    0% { transform: translateX(0); }
+    40% { transform: translateX(30%); }
+    60% { transform: translateX(30%); }
+    100% { transform: translateX(0); }
+  }
+
+</style>
+</head>
+<body>
+  <div class="carousel">
+    <div class="cards">
+      <div class="card">Card 1</div>
+      <div class="card">Card 2</div>
+      <div class="card">Card 3</div>
+      <div class="card">Card 4</div>
+      <div class="card">Card 5</div>
+      <div class="card">Fix</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+
+
+.carousel {
+    margin: 100px auto;
+    width: 90%;
+    border: 5px solid #333;
+    display: flex   ;  
+    overflow-x: auto; 
+    
+}
+.carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.group {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  justify-content: center;
+  gap: 1em ;
+  animation: spin 65s linear infinite;
+  padding-right: 1em ;
+}
+.card {
+flex: 0 0 5em;
+height: 5em;
+padding: 1em;
+background: cornflowerblue;
+font-size: 3rem;
+border-radius: .2em;
+text-align: center;
+align-content: center ;
+}
+
+
+@keyframes spin {
+    from { translate: 0;}
+    to { translate: -100%;  }
+}
+   
