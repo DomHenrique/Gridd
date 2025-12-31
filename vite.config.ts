@@ -50,14 +50,9 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      // Otimizar bundle
-      minify: 'terser',
+      // Otimizar bundle - usar esbuild em vez de terser
+      minify: 'esbuild',
       sourcemap: mode === 'production' ? false : true,
-      terserOptions: {
-        compress: {
-          drop_console: mode === 'production',
-        },
-      },
     }
   };
 });
