@@ -58,3 +58,4 @@ out/
 *.key
 *.crt
 .env.local.disabled
+docker-compose_local.yaml

@@ -16,8 +16,7 @@ import {
   GoogleAuthConfig,
 } from './auth.types';
 import { logger } from '../utils/logger';
-import { getEnvConfig, debugLog } from '../../config/env';
-import { supabase } from '../supabase';
+import { getEnvConfig, getApiUrl, debugLog } from '../../config/env';
 
 const STORAGE_KEY_SESSION = 'gridd360_session';
 const STORAGE_KEY_TOKEN = 'gridd360_token';
@@ -35,11 +34,55 @@ export class AuthService {
    * Login com Google OAuth
    */
   async loginWithGoogle(code: string): Promise<LoginResponse> {
-    logger.info('🔐 Login com Google solicitado - Favor usar fluxo Supabase direto se possível');
-    return {
-      success: false,
-      error: 'Google OAuth via legacy API desativado. Use supabase.auth.signInWithOAuth()',
-    };
+    try {
+      logger.info('🔐 Iniciando login com Google', { code: code?.substring(0, 10) });
+      const apiUrl = getApiUrl();
+      debugLog('Google callback endpoint:', `${apiUrl}/auth/google/callback`);
+
+      const response = await fetch(`${apiUrl}/auth/google/callback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        logger.error('❌ Erro no login Google', {
+          status: response.status,
+          error: data.error,
+        });
+        return {
+          success: false,
+          error: data.error || 'Falha no login com Google',
+        };
+      }
+
+      const { user, token } = data;
+
+      this.currentSession = {
+        user,
+        token,
+        isAuthenticated: true,
+        provider: AuthProvider.GOOGLE,
+      };
+
+      this.scheduleTokenRefresh(token);
+      this.saveSessionToStorage();
+
+      logger.success('✅ Login Google bem-sucedido', {
+        email: user.email,
+        role: user.role,
+      });
+
+      return { success: true, user, token };
+    } catch (error) {
+      logger.error('❌ Erro ao fazer login com Google', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      };
+    }
   }
 
   /**
@@ -47,59 +90,36 @@ export class AuthService {
    */
   async loginWithEmail(email: string, password: string): Promise<LoginResponse> {
     try {
-      logger.info('🔐 Tentando login com email (Supabase)', { email });
+      logger.info('🔐 Tentando login com email', { email });
 
       if (!email || !password) {
         throw new Error('Email e senha são obrigatórios');
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        logger.error('❌ Falha na autenticação Supabase', { error: error.message, email });
+      const data = await response.json();
+
+      if (!response.ok) {
+        logger.error('❌ Falha na autenticação', {
+          status: response.status,
+          email,
+        });
         return {
           success: false,
-          error: error.message || 'Email ou senha incorretos',
+          error: data.error || 'Email ou senha incorretos',
         };
       }
 
-      const { user, session } = data;
-
-      // Buscar perfil estendido para pegar o papel (role)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      const mappedUser: User = {
-        id: user.id,
-        email: user.email || '',
-        firstName: profile?.full_name?.split(' ')[0] || '',
-        lastName: profile?.full_name?.split(' ').slice(1).join(' ') || '',
-        name: profile?.full_name || user.email || '',
-        role: (profile?.role as UserRole) || UserRole.CLIENT,
-        provider: AuthProvider.LOCAL,
-        isSuperAdmin: profile?.role === 'superuser',
-        isActive: true,
-        createdAt: new Date(user.created_at),
-        updatedAt: new Date(),
-        picture: profile?.avatar_url,
-      };
-
-      const token: AuthToken = {
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresIn: session.expires_in,
-        expiresAt: Date.now() + (session.expires_in * 1000),
-        tokenType: 'Bearer',
-      };
+      const { user, token } = data;
 
       this.currentSession = {
-        user: mappedUser,
+        user,
         token,
         isAuthenticated: true,
         provider: AuthProvider.LOCAL,
@@ -108,12 +128,12 @@ export class AuthService {
       this.scheduleTokenRefresh(token);
       this.saveSessionToStorage();
 
-      logger.success('✅ Login Supabase bem-sucedido', {
-        email: mappedUser.email,
-        role: mappedUser.role,
+      logger.success('✅ Login bem-sucedido', {
+        email: user.email,
+        role: user.role,
       });
 
-      return { success: true, user: mappedUser, token };
+      return { success: true, user, token };
     } catch (error) {
       logger.error('❌ Erro ao fazer login', error);
       return {
@@ -128,24 +148,49 @@ export class AuthService {
    */
   async register(data: RegisterData): Promise<RegisterResponse> {
     try {
-      logger.info('📝 Iniciando registro (Supabase)', { email: data.email });
+      logger.info('📝 Iniciando registro', { email: data.email });
 
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: `${data.firstName} ${data.lastName}`,
-          }
-        }
+      if (!data.email || !data.password || !data.firstName || !data.lastName) {
+        throw new Error('Todos os campos são obrigatórios');
+      }
+
+      if (data.password.length < 8) {
+        throw new Error('Senha deve ter no mínimo 8 caracteres');
+      }
+
+      if (data.password !== data.password) {
+        throw new Error('Senhas não conferem');
+      }
+
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
 
-      if (signUpError) throw signUpError;
+      const result = await response.json();
+
+      if (!response.ok) {
+        logger.error('❌ Erro no registro', {
+          status: response.status,
+          error: result.error,
+        });
+        return {
+          success: false,
+          error: result.error || 'Erro ao registrar',
+        };
+      }
+
+      logger.success('✅ Registro bem-sucedido', {
+        email: result.user?.email,
+      });
 
       return {
         success: true,
-        message: 'Registro realizado com sucesso. Verifique seu email se necessário.',
-        requiresEmailVerification: true,
+        user: result.user,
+        message: 'Registro realizado com sucesso',
+        requiresEmailVerification: result.requiresEmailVerification,
       };
     } catch (error) {
       logger.error('❌ Erro ao registrar usuário', error);
@@ -161,8 +206,24 @@ export class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      logger.info('👋 Fazendo logout (Supabase)');
-      await supabase.auth.signOut();
+      logger.info('👋 Fazendo logout');
+
+      const token = this.getAccessToken();
+      if (token) {
+        try {
+          const apiUrl = getApiUrl();
+          await fetch(`${apiUrl}/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        } catch (error) {
+          logger.warn('⚠️ Aviso ao fazer logout no servidor', error);
+        }
+      }
+
       this.clearSession();
       logger.success('✅ Logout realizado');
     } catch (error) {
@@ -176,30 +237,43 @@ export class AuthService {
    */
   async refreshToken(): Promise<boolean> {
     try {
-      logger.info('🔄 Renovando token (Supabase)');
-      const { data, error } = await supabase.auth.refreshSession();
+      const refreshToken = this.getRefreshToken();
 
-      if (error || !data.session) {
-        logger.error('❌ Erro ao renovar sessão Supabase', error);
+      if (!refreshToken) {
+        logger.warn('⚠️ Nenhum refresh token disponível');
+        return false;
+      }
+
+      logger.info('🔄 Renovando token');
+
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        logger.error('❌ Erro ao renovar token', {
+          status: response.status,
+        });
         this.clearSession();
         return false;
       }
 
-      const { session } = data;
-      const token: AuthToken = {
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresIn: session.expires_in,
-        expiresAt: Date.now() + (session.expires_in * 1000),
-        tokenType: 'Bearer',
-      };
+      const newToken = data.token;
 
       if (this.currentSession) {
-        this.currentSession.token = token;
-        this.scheduleTokenRefresh(token);
+        this.currentSession.token = newToken;
+        this.scheduleTokenRefresh(newToken);
         this.saveSessionToStorage();
+
+        logger.success('✅ Token renovado com sucesso');
         return true;
       }
+
       return false;
     } catch (error) {
       logger.error('❌ Erro ao renovar token', error);
@@ -278,27 +352,37 @@ export class AuthService {
    */
   async updateProfile(data: Partial<User>): Promise<boolean> {
     try {
-      logger.info('📝 Atualizando perfil do usuário (Supabase)');
+      logger.info('📝 Atualizando perfil do usuário');
 
-      const user = this.getCurrentUser();
-      if (!user) throw new Error('Não autenticado');
+      const token = this.getAccessToken();
+      if (!token) {
+        throw new Error('Não autenticado');
+      }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: data.name || `${data.firstName} ${data.lastName}`,
-          avatar_url: data.picture,
-        })
-        .eq('id', user.id);
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar perfil');
+      }
+
+      const result = await response.json();
 
       if (this.currentSession) {
-        this.currentSession.user = { ...this.currentSession.user, ...data };
+        this.currentSession.user = result.user;
         this.saveSessionToStorage();
-        logger.success('✅ Perfil atualizado');
+
+        logger.success('✅ Perfil atualizado com sucesso');
         return true;
       }
+
       return false;
     } catch (error) {
       logger.error('❌ Erro ao atualizar perfil', error);

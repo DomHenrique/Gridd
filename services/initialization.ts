@@ -18,7 +18,12 @@ export function initializeEnvironment(): void {
   console.log('🚀 Inicializando Aplicação Gridd360');
   console.log('════════════════════════════════════════════════════════════════');
 
-  console.log(`📦 Versão do Node: ${process.versions?.node || 'N/A'}`);
+  // Versão do Node (apenas em desenvolvimento, onde Node.js existe)
+  const nodeVersion = typeof process !== 'undefined' && process.versions?.node 
+    ? process.versions.node 
+    : 'N/A (Browser)';
+  
+  console.log(`📦 Versão do Node: ${nodeVersion}`);
   console.log(`🌍 Ambiente: ${config.nodeEnv.toUpperCase()}`);
   console.log(`🔐 Autenticação: ${config.googleClientId ? '✅ Google OAuth Configurado' : '⚠️  Google OAuth não configurado'}`);
   console.log(`📡 API URL: ${config.apiUrl}`);

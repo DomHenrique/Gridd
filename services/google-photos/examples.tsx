@@ -468,9 +468,9 @@ export function PermissionsManager({ resourceId }: { resourceId: string }) {
  */
 export function initializeGooglePhotosIntegration() {
   initializeGooglePhotos({
-    clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
-    clientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
-    redirectUri: process.env.REACT_APP_GOOGLE_REDIRECT_URI,
+    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET,
+    redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI,
     scopes: [
       'https://www.googleapis.com/auth/photoslibrary.readonly',
       'https://www.googleapis.com/auth/photoslibrary.edit.appsource',

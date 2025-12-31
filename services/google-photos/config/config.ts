@@ -11,10 +11,10 @@ import { initializeAuthService } from '../auth/auth.service';
  */
 export const GOOGLE_PHOTOS_CONFIG: GoogleAuthConfig = {
   // ⚠️ IMPORTANTE: Configure estas variáveis de ambiente
-  // Suporta tanto prefixos VITE_ quanto REACT_APP_ para compatibilidade
-  clientId: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || (import.meta as any).env.REACT_APP_GOOGLE_CLIENT_ID || '',
-  clientSecret: (import.meta as any).env.VITE_GOOGLE_CLIENT_SECRET || (import.meta as any).env.REACT_APP_GOOGLE_CLIENT_SECRET || '',
-  redirectUri: (import.meta as any).env.VITE_GOOGLE_REDIRECT_URI || (import.meta as any).env.REACT_APP_GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/callback',
+  // Suporta tanto prefixos VITE_ quanto VITE_ para compatibilidade
+  clientId: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '',
+  clientSecret: (import.meta as any).env.VITE_GOOGLE_CLIENT_SECRET || (import.meta as any).env.VITE_GOOGLE_CLIENT_SECRET || '',
+  redirectUri: (import.meta as any).env.VITE_GOOGLE_REDIRECT_URI || (import.meta as any).env.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/callback',
 
   // Escopos necessários para a API Library (após 01/04/2025)
   scopes: [
@@ -163,12 +163,12 @@ export function initializeGooglePhotos(customConfig?: Partial<GoogleAuthConfig>)
   // Validar configuração
   let hasMissing = false;
   if (!config.clientId) {
-    console.warn('[GoogleConfig] AVISO: Google Client ID não configurado (REACT_APP_GOOGLE_CLIENT_ID).');
+    console.warn('[GoogleConfig] AVISO: Google Client ID não configurado (VITE_GOOGLE_CLIENT_ID).');
     hasMissing = true;
   }
 
   if (!config.clientSecret) {
-    console.warn('[GoogleConfig] AVISO: Google Client Secret não configurado (REACT_APP_GOOGLE_CLIENT_SECRET).');
+    console.warn('[GoogleConfig] AVISO: Google Client Secret não configurado (VITE_GOOGLE_CLIENT_SECRET).');
     hasMissing = true;
   }
 

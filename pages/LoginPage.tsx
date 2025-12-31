@@ -148,7 +148,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       const config = {
-        clientId: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || (import.meta as any).env.REACT_APP_GOOGLE_CLIENT_ID || '',
+        clientId: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '',
         redirectUri: `${window.location.origin}/login`,
         scopes: [
           'https://www.googleapis.com/auth/userinfo.profile',

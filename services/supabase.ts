@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { getEnvConfig } from '../config/env';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const { supabaseUrl, supabaseAnonKey } = getEnvConfig();
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase URL or Key not found in environment variables. Database features will fail.');

@@ -24,8 +24,12 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy build artifacts from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Copy env generator script
+COPY env.sh /docker-entrypoint.d/40-env-generator.sh
+RUN chmod +x /docker-entrypoint.d/40-env-generator.sh
+
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start Nginx with explicit env generation
+CMD ["/bin/sh", "-c", "/docker-entrypoint.d/40-env-generator.sh && nginx -g 'daemon off;'"]

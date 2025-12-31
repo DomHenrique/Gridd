@@ -15,7 +15,7 @@ interface LogEntry {
 class LoggerService {
   private logs: LogEntry[] = [];
   private readonly maxLogs = 100;
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = import.meta.env.MODE === 'development';
 
   /**
    * Log de Informação
@@ -123,7 +123,7 @@ class LoggerService {
   private sendToBackend(entry: LogEntry): void {
     try {
       // Aqui você pode enviar para um serviço de logging como Sentry, LogRocket, etc
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
       fetch(`${apiUrl}/logs`, {
         method: 'POST',

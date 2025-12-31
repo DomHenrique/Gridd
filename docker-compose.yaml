@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  gridd:
+    image: domhenrique/gridd:v1.2
+    container_name: gridd-app
+    restart: always
+    networks:
+      - portainer_hnperf
+      - postgres_postgres_net
+    environment:
+      # URL da API
+      - VITE_API_URL=https://gridd360.hnperformancedigital.com.br
+      
+      # URL da Aplicação
+      - VITE_APP_URL=https://seu-dominio.com
+
+      # Fuso Horário
+      - TZ=America/Sao_Paulo
+
+      # Supabase (Público - OK para expor)
+      - VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+      - VITE_SUPABASE_ANON_KEY=sua-chave-anonima-publica
+      
+      # Google OAuth (Público - OK para expor)
+      - VITE_GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com
+      - VITE_GOOGLE_REDIRECT_URI=https://seu-dominio.com/auth/callback
+      
+      # ⚠️ SECRETS - Apenas backend, NÃO expor no navegador!
+      # - VITE_SESSION_SECRET=seu-uuid-secreto
+      # - VITE_GOOGLE_CLIENT_SECRET=seu-client-secret
+
+    
+    # Se a imagem for baseada em Nginx/Apache (produção), a porta interna costuma ser 80.
+    # Caso a aplicação não abra, tente mudar o loadbalancer.server.port para 3000.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=portainer_hnperf"
+      - "traefik.http.routers.gridd.rule=Host(`gridd360.hnperformancedigital.com.br`)"
+      - "traefik.http.routers.gridd.entrypoints=websecure"
+      - "traefik.http.routers.gridd.tls=true"
+      - "traefik.http.routers.gridd.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.gridd.loadbalancer.server.port=80"
+      - "traefik.http.services.gridd.loadbalancer.server.scheme=http"
+
+networks:
+  portainer_hnperf:
+    external: true
+  postgres_postgres_net:
+    external: true

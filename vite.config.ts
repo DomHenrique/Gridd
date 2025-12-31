@@ -6,18 +6,23 @@ export default defineConfig(({ mode }) => {
   // Carrega variáveis de ambiente com prefixos suportados
   const env = loadEnv(mode, '.', ['REACT_APP_', 'VITE_', '']);
 
-  // Filtra e prepara variáveis para o define
-  const defines: Record<string, any> = {};
+  // Filtra e mapeia variáveis com prefixos
+  const processEnv: Record<string, string> = {};
   
   Object.keys(env).forEach(key => {
-    if (key.startsWith('REACT_APP_') || key.startsWith('VITE_') || ['NODE_ENV', 'GEMINI_API_KEY'].includes(key)) {
-      // Define individualmente para máxima compatibilidade
-      defines[`process.env.${key}`] = JSON.stringify(env[key]);
+    // Copia variáveis com prefixo REACT_APP_
+    if (key.startsWith('REACT_APP_')) {
+      processEnv[key] = JSON.stringify(env[key]);
+    }
+    // Copia variáveis com prefixo VITE_
+    if (key.startsWith('VITE_')) {
+      processEnv[key] = JSON.stringify(env[key]);
+    }
+    // Variáveis especiais sem prefixo
+    if (['NODE_ENV', 'GEMINI_API_KEY'].includes(key)) {
+      processEnv[key] = JSON.stringify(env[key]);
     }
   });
-
-  // Garante que o NODE_ENV esteja correto
-  defines['process.env.NODE_ENV'] = JSON.stringify(mode);
 
   return {
     server: {
@@ -26,16 +31,33 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      ...defines,
-      // Fallback para quem acessa o objeto process.env diretamente
-      'process.env': JSON.stringify(env),
-      // Acesso direto via __ENV__ se necessário
-      __ENV__: JSON.stringify(env),
+      // Define um objeto process global compatível
+      'process': {
+        'env': processEnv,
+        'versions': JSON.stringify({}),
+        'exit': '(() => {})',
+      },
+      // Fallback para casos onde process é acessado diretamente
+      'process.env.NODE_ENV': JSON.stringify(mode),
+      'process.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || 'http://localhost:3001/api'),
+      'process.env.VITE_APP_URL': JSON.stringify(env.VITE_APP_URL || 'http://localhost:3000'),
+      // Acesso direto via import.meta.env
+      '__ENV__': env,
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      // Otimizar bundle
+      minify: 'terser',
+      sourcemap: mode === 'production' ? false : true,
+      terserOptions: {
+        compress: {
+          drop_console: mode === 'production',
+        },
+      },
     }
   };
 });

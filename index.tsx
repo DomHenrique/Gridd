@@ -1,3 +1,8 @@
+// ============================================================================
+// POLYFILLS - DEVE SER IMPORTADO PRIMEIRO!
+// ============================================================================
+import './utils/processPolyfill';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import AppNew from './AppNew';
@@ -25,6 +30,11 @@ try {
   setupErrorHandlers();
 } catch (error) {
   logger.critical('Erro na inicialização de configurações', error, undefined, 'App');
+  
+  // Obter modo debug de forma segura (sem acessar process.env diretamente)
+  const isDebug = document.documentElement.dataset.debug === 'true' || 
+                  import.meta.env.REACT_APP_DEBUG === 'true';
+  
   // Mostrar erro ao usuário
   document.body.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Arial, sans-serif;">
@@ -32,7 +42,7 @@ try {
         <h1 style="color: #ff6b26; margin-bottom: 20px;">⚠️ Erro de Inicialização</h1>
         <p style="color: #333; font-size: 16px; line-height: 1.6;">
           ${
-            process.env.REACT_APP_DEBUG
+            isDebug
               ? `<pre style="text-align: left; background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">${String(error)}</pre>`
               : 'A aplicação não pôde ser inicializada. Verifique as variáveis de ambiente.'
           }
@@ -43,7 +53,9 @@ try {
       </div>
     </div>
   `;
-  process.exit(1);
+  
+  // Não chamar process.exit() em ambiente de browser
+  throw new Error('Erro de inicialização da aplicação');
 }
 
 // ============================================================================

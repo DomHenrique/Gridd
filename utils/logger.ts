@@ -29,7 +29,7 @@ export interface LogEntry {
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';
   private enableConsole = true;
-  private enableRemote = process.env.REACT_APP_ENABLE_REMOTE_LOGGING === 'true';
+  private enableRemote = process.env.VITE_ENABLE_REMOTE_LOGGING === 'true';
   private logs: LogEntry[] = [];
   private maxLogs = 1000;
   private sessionId = this.generateSessionId();
@@ -212,7 +212,7 @@ class Logger {
    */
   private async sendToBackend(entry: LogEntry): Promise<void> {
     try {
-      const backendUrl = process.env.REACT_APP_API_URL;
+      const backendUrl = process.env.VITE_API_URL;
       if (!backendUrl) return;
 
       await fetch(`${backendUrl}/logs`, {
@@ -230,7 +230,7 @@ class Logger {
    */
   private async sendToRemote(entry: LogEntry): Promise<void> {
     try {
-      const remoteUrl = process.env.REACT_APP_SENTRY_DSN;
+      const remoteUrl = process.env.VITE_SENTRY_DSN;
       if (!remoteUrl) return;
 
       await fetch(remoteUrl, {

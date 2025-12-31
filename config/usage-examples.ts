@@ -197,7 +197,7 @@ function correctExample() {
  * ❌ ERRADO - Acessar process.env diretamente
  */
 function wrongExample() {
-  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID; // ❌ Evite!
+  const clientId = process.env.VITE_GOOGLE_CLIENT_ID; // ❌ Evite!
   // Motivo: Sem tipagem, sem validação, sem centralização
 }
 
