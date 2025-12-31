@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
 
   // Filtra e mapeia variáveis com prefixos
   const processEnv: Record<string, string> = {};
-  
+
   Object.keys(env).forEach(key => {
     // Copia variáveis com prefixo REACT_APP_
     if (key.startsWith('REACT_APP_')) {
@@ -32,12 +32,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // Define um objeto process global compatível
-      'process': {
-        'env': processEnv,
-        'versions': JSON.stringify({}),
-        'exit': '(() => {})',
-      },
-      // Fallback para casos onde process é acessado diretamente
+      // Em produção, garantir que process é um objeto completo
+      'global': 'globalThis',
+      'process.env': JSON.stringify(processEnv),
+      'process.versions': JSON.stringify({ node: undefined }),
+      'process.version': JSON.stringify('v18.0.0'),
+      'process.platform': JSON.stringify('web'),
       'process.env.NODE_ENV': JSON.stringify(mode),
       'process.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || 'http://localhost:3001/api'),
       'process.env.VITE_APP_URL': JSON.stringify(env.VITE_APP_URL || 'http://localhost:3000'),

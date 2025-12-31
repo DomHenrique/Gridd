@@ -2,9 +2,15 @@ version: '3.8'
 
 services:
   gridd:
-    image: domhenrique/gridd:v1.2
+    image: domhenrique/gridd:v1.13
     container_name: gridd-app
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - portainer_hnperf
       - postgres_postgres_net
@@ -30,7 +36,12 @@ services:
       # - VITE_SESSION_SECRET=seu-uuid-secreto
       # - VITE_GOOGLE_CLIENT_SECRET=seu-client-secret
 
-    
+      # Variáveis adicionais que podem ser necessárias
+      - VITE_ENABLE_GOOGLE_PHOTOS=true
+      - VITE_MAX_FILE_SIZE_MB=100
+      - VITE_ALLOWED_FILE_TYPES=jpg,jpeg,png,gif,bmp,webp,svg,tiff,mp4,mov,avi,mkv,webm,flv,wmv
+
+
     # Se a imagem for baseada em Nginx/Apache (produção), a porta interna costuma ser 80.
     # Caso a aplicação não abra, tente mudar o loadbalancer.server.port para 3000.
     labels:
