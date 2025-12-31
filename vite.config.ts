@@ -53,6 +53,9 @@ export default defineConfig(({ mode }) => {
       // Otimizar bundle - usar esbuild em vez de terser
       minify: 'esbuild',
       sourcemap: mode === 'production' ? false : true,
+      rollupOptions: {
+        external: ['/env-config.js'],
+      }
     }
   };
 });
