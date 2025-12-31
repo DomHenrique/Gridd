@@ -17,7 +17,6 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 // Inicialização de Variáveis de Ambiente - DEVE SER ANTES DE QUALQUER OUTRO CÓDIGO
 // ============================================================================
 import { initializeEnvironment, setupErrorHandlers } from './services/initialization';
-import { initializeConfig } from './config/initialize';
 
 // Inicializar variáveis de ambiente
 initializeEnvironment();
@@ -25,7 +24,6 @@ initializeEnvironment();
 // Inicializar e validar configurações
 try {
   logger.info('Iniciando aplicação...', undefined, 'App');
-  initializeConfig();
   logger.info('Configurações carregadas com sucesso', undefined, 'App');
   setupErrorHandlers();
 } catch (error) {
