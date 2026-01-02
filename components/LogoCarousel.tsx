@@ -55,6 +55,14 @@ const logos = [
       <path d="M2 21c0-3 1.85-5.36 5.08-6C10 14.52 12 12 13 9" />
     </svg>
   )},
+  { name: 'Redemac', icon: (
+    <img 
+      src="https://redemac.com.br/wp-content/uploads/2024/04/logo-redemac.webp" 
+      alt="Redemac" 
+      className="w-8 h-8"
+      style={{ objectFit: 'contain' }}
+    />
+  )},
 ];
 
 export const LogoCarousel: React.FC = () => {
