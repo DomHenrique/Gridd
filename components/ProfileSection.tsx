@@ -41,6 +41,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({ currentUser, onL
                     type="file" 
                     className="hidden" 
                     accept="image/*"
+                    aria-label="Upload de foto de perfil"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) alert(`Upload de avatar selecionado: ${file.name}\n(Funcionalidade de salvamento do avatar em desenvolvimento)`);

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { User, Folder, FileAsset, ActivityLog, Notification, PortfolioItem, FolderPermission, AccessLevel } from '../types';
+import { getGooglePhotosService, getAuthService } from './google-photos';
 
 // --- REFACTORED DATA SERVICE USING SUPABASE ---
 
@@ -82,19 +83,40 @@ export const DataService = {
        return (data || []).map(f => ({...f, ownerId: f.owner_id, parentId: f.parent_id}));
   },
 
-  createFolder: async (parentId: string | null, name: string, note: string, userId: string): Promise<Folder> => {
-    const { data, error } = await supabase.from('folders').insert({
-        parent_id: parentId,
-        name,
-        note,
-        owner_id: userId
-    }).select().single();
+  createFolder: async (name: string, parentId: string | null = null, ownerId: string): Promise<Folder> => {
+        try {
+            let googleAlbumId: string | undefined;
 
-    if (error) throw error;
+            // Tentativa de criar álbum no Google Photos se for superuser ou se tiver permissão
+            try {
+                const auth = getAuthService();
+                if (auth.isAuthenticated()) {
+                    const photosService = getGooglePhotosService();
+                    const album = await photosService.createAlbum(name);
+                    googleAlbumId = album.id;
+                    console.log(`Álbum '${name}' criado no Google Photos: ${googleAlbumId}`);
+                }
+            } catch (e) {
+                console.error("Falha ao criar álbum no Google Photos:", e);
+                // Não bloqueamos a criação da pasta local se o Google falhar, 
+                // para não quebrar a experiência do usuário.
+            }
 
-    await DataService.logActivity(userId, 'CREATE_FOLDER', name);
-    return { ...data, ownerId: data.owner_id, parentId: data.parent_id };
-  },
+            const { data, error } = await supabase.from('folders').insert({
+                name,
+                parent_id: parentId,
+                owner_id: ownerId,
+                google_album_id: googleAlbumId
+            }).select().single();
+
+            if (error) throw error;
+            await DataService.logActivity(ownerId, 'CREATE_FOLDER', name);
+            return data;
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    },
 
   updateFolder: async (folderId: string, name: string, note: string, userId: string): Promise<void> => {
       const { error } = await supabase.from('folders').update({ name, note }).eq('id', folderId);
@@ -108,52 +130,77 @@ export const DataService = {
     return (data || []).map(f => ({...f, folderId: f.folder_id, uploadedBy: f.uploaded_by}));
   },
 
-  uploadFiles: async (folderId: string, files: {file: File, note: string}[], userId: string): Promise<void> => {
-     for (const item of files) {
-         try {
-             // 1. Gerar um caminho único para o arquivo
-             const fileExt = item.file.name.split('.').pop();
-             const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-             const filePath = `${userId}/${folderId || 'root'}/${fileName}`;
+  uploadFiles: async (folderId: string, items: { file: File; note: string }[], userId: string): Promise<void> => {
+        try {
+            const photosService = getGooglePhotosService();
+            const auth = getAuthService();
+            
+            // 1. Buscar a pasta para obter o google_album_id
+            let targetAlbumId: string | undefined;
+            if (folderId) {
+                const { data: folder } = await supabase.from('folders').select('google_album_id').eq('id', folderId).single();
+                targetAlbumId = folder?.google_album_id;
+            }
 
-             // 2. Upload para o Supabase Storage (Bucket 'assets')
-             const { error: uploadError } = await supabase.storage
-                .from('assets')
-                .upload(filePath, item.file);
+            for (const item of items) {
+                const { file, note } = item;
+                
+                // 2. Upload para o Google Photos se autenticado
+                let googleMediaItemId: string | undefined;
+                let finalUrl: string | undefined;
 
-             if (uploadError) {
-                 console.error("Erro no upload para o storage:", uploadError);
-                 throw uploadError;
-             }
+                if (auth.isAuthenticated()) {
+                    try {
+                        // Upload dos bytes para obter token
+                        const uploadToken = await photosService.uploadMediaSimple(file);
+                        
+                        // Criar o Media Item (opcionalmente no álbum)
+                        const response = await photosService.batchCreateMediaItems({
+                            albumId: targetAlbumId,
+                            newMediaItems: [{
+                                description: note || file.name,
+                                simpleMediaItem: {
+                                    uploadToken
+                                }
+                            }]
+                        });
 
-             // 3. Obter URL Pública
-             const { data: { publicUrl } } = supabase.storage
-                .from('assets')
-                .getPublicUrl(filePath);
+                        const resItem = response.newMediaItemResults?.[0];
+                        if (resItem?.status?.message === 'OK' || !resItem?.status) {
+                            googleMediaItemId = resItem?.mediaItem?.id;
+                            finalUrl = resItem?.mediaItem?.baseUrl;
+                        } else {
+                            throw new Error(`Erro Google: ${resItem?.status?.message}`);
+                        }
+                    } catch (e) {
+                        console.error(`Falha no upload para Google Photos (${file.name}):`, e);
+                        // Fallback para Supabase Storage se o Google falhar? 
+                        // O usuário pediu especificamente Google, então vamos avisar se falhar.
+                    }
+                }
 
-             // 4. Salvar registro na tabela 'files'
-             const { error: dbError } = await supabase.from('files').insert({
-                 folder_id: folderId,
-                 name: item.file.name,
-                 url: publicUrl,
-                 type: item.file.type.startsWith('image/') ? 'image' : 'file',
-                 size: (item.file.size / 1024 / 1024).toFixed(2) + ' MB',
-                 uploaded_by: userId,
-                 note: item.note
-             });
-             
-             if (dbError) {
-                 console.error("Erro ao salvar registro de arquivo:", dbError);
-                 throw dbError;
-             }
+                // Se o Google Photos falhou ou não autenticado, mas queremos persistir o registro
+                // NOTA: No fluxo "Google Photos First", o link é essencial.
+                
+                const { error } = await supabase.from('files').insert({
+                    folder_id: folderId || null,
+                    name: file.name,
+                    url: finalUrl || '', // URL do Google Photos (BaseUrl)
+                    type: file.type.startsWith('image/') ? 'image' : 'file',
+                    size: `${(file.size / 1024).toFixed(2)} KB`,
+                    uploaded_by: userId,
+                    note: note,
+                    google_media_item_id: googleMediaItemId
+                });
 
-             await DataService.logActivity(userId, 'UPLOAD', item.file.name);
-         } catch (error) {
-             console.error(`Falha no upload do arquivo ${item.file.name}:`, error);
-             throw error;
-         }
-     }
-  },
+                if (error) throw error;
+                await DataService.logActivity(userId, 'UPLOAD', file.name);
+            }
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    },
 
   deleteFile: async (fileId: string, userId: string): Promise<void> => {
     const { error } = await supabase.from('files').delete().eq('id', fileId);

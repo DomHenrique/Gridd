@@ -88,7 +88,7 @@ export const FolderExplorer: React.FC<FolderExplorerProps> = ({ currentUser, onU
       if (!name) return;
       
       try {
-          await DataService.createFolder(currentFolderId, name, '', currentUser.id);
+          await DataService.createFolder(name, currentFolderId, currentUser.id);
           loadContent(currentFolderId);
       } catch (e: any) {
           alert(`Erro: ${e.message}`);
