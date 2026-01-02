@@ -29,11 +29,24 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({ currentUser, onL
                   <User size={40} />
                 </div>
               </div>
-              <button className="absolute bottom-1 -right-1 p-1.5 bg-primary text-white rounded-lg shadow-lg hover:scale-110 transition-transform" 
-                      style={{ backgroundColor: BRAND.primaryColor }}
-                      title="Alterar foto">
-                <Camera size={14} />
-              </button>
+                <label 
+                  className="absolute bottom-1 -right-1 p-1.5 bg-primary text-white rounded-lg shadow-lg hover:scale-110 transition-transform cursor-pointer" 
+                  style={{ backgroundColor: BRAND.primaryColor }}
+                  title="Alterar foto"
+                  htmlFor="avatar-upload"
+                >
+                  <Camera size={14} />
+                  <input 
+                    id="avatar-upload" 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) alert(`Upload de avatar selecionado: ${file.name}\n(Funcionalidade de salvamento do avatar em desenvolvimento)`);
+                    }}
+                  />
+                </label>
             </div>
           </div>
 

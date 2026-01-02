@@ -109,26 +109,49 @@ export const DataService = {
   },
 
   uploadFiles: async (folderId: string, files: {file: File, note: string}[], userId: string): Promise<void> => {
-     // TODO: Implement actual Supabase Storage upload. 
-     // For now, we create the file record. The URL should come from the storage upload result.
-     
      for (const item of files) {
-         // Logic for storage upload should be added here.
-         // const { data, error: uploadError } = await supabase.storage.from('assets').upload(`folder_${folderId}/${item.file.name}`, item.file);
-         // const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(path);
-         
-         const { error } = await supabase.from('files').insert({
-             folder_id: folderId,
-             name: item.file.name,
-             url: '', // Placeholder until storage is active
-             type: 'image', // simplified
-             size: (item.file.size / 1024 / 1024).toFixed(2) + ' MB',
-             uploaded_by: userId,
-             note: item.note
-         });
-         
-         if (error) console.error("Upload record failed", error);
-         else await DataService.logActivity(userId, 'UPLOAD', item.file.name);
+         try {
+             // 1. Gerar um caminho único para o arquivo
+             const fileExt = item.file.name.split('.').pop();
+             const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+             const filePath = `${userId}/${folderId || 'root'}/${fileName}`;
+
+             // 2. Upload para o Supabase Storage (Bucket 'assets')
+             const { error: uploadError } = await supabase.storage
+                .from('assets')
+                .upload(filePath, item.file);
+
+             if (uploadError) {
+                 console.error("Erro no upload para o storage:", uploadError);
+                 throw uploadError;
+             }
+
+             // 3. Obter URL Pública
+             const { data: { publicUrl } } = supabase.storage
+                .from('assets')
+                .getPublicUrl(filePath);
+
+             // 4. Salvar registro na tabela 'files'
+             const { error: dbError } = await supabase.from('files').insert({
+                 folder_id: folderId,
+                 name: item.file.name,
+                 url: publicUrl,
+                 type: item.file.type.startsWith('image/') ? 'image' : 'file',
+                 size: (item.file.size / 1024 / 1024).toFixed(2) + ' MB',
+                 uploaded_by: userId,
+                 note: item.note
+             });
+             
+             if (dbError) {
+                 console.error("Erro ao salvar registro de arquivo:", dbError);
+                 throw dbError;
+             }
+
+             await DataService.logActivity(userId, 'UPLOAD', item.file.name);
+         } catch (error) {
+             console.error(`Falha no upload do arquivo ${item.file.name}:`, error);
+             throw error;
+         }
      }
   },
 

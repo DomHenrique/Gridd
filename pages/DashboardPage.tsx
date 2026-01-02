@@ -12,6 +12,7 @@ import { FolderExplorer } from '../components/FolderExplorer';
 import { ActivityReports } from '../components/ActivityReports';
 import { DataService } from '../services/dataService';
 import { logger } from '../services/utils/logger';
+import { supabase } from '../services/supabase';
 
 interface DashboardPageProps {
   currentUser: User | null;
@@ -24,6 +25,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
   const [activeTab, setActiveTab] = useState('files');
   const [searchTerm, setSearchTerm] = useState('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -192,21 +194,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
                 className="btn text-white fw-bold"
                 style={{ backgroundColor: BRAND.primaryColor }}
                 onClick={async () => {
-                  try {
-                    const googleAuth = getAuthService();
-                    if (!googleAuth.isAuthenticated()) {
-                      const confirmLogin = window.confirm(
-                        "Para enviar arquivos, você precisa estar conectado ao Google Photos.\n\nDeseja conectar agora?"
-                      );
-                      if (confirmLogin) {
-                        window.location.href = await googleAuth.getAuthorizationUrl();
+                  // Se estiver na aba de fotos do Google, mantém o comportamento atual
+                  if (activeTab === 'photos') {
+                    try {
+                      const googleAuth = getAuthService();
+                      if (!googleAuth.isAuthenticated()) {
+                        const confirmLogin = window.confirm(
+                          "Para acessar seu Google Photos, você precisa estar conectado.\n\nDeseja conectar agora?"
+                        );
+                        if (confirmLogin) {
+                          window.location.href = await googleAuth.getAuthorizationUrl();
+                        }
+                        return;
                       }
-                      return;
+                      setActiveTab('photos');
+                    } catch (e) {
+                      console.error("Google Auth Check Failed", e);
                     }
+                  } else {
+                    // Para outras abas, abre o upload local na raiz por padrão
+                    setUploadTargetFolderId(null);
                     setUploadModalOpen(true);
-                  } catch (e) {
-                    console.error("Google Auth Check Failed", e);
-                    alert("Erro ao verificar conexão. Tente recarregar a página.");
                   }
                 }}
               >
@@ -473,15 +481,52 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
 
               {/* Assets & Shared Tab */}
               {(activeTab === 'assets' || activeTab === 'shared') && currentUser && (
-                <FolderExplorer currentUser={currentUser} />
+                <FolderExplorer 
+                  currentUser={currentUser} 
+                  onUploadClick={(folderId) => {
+                    setUploadTargetFolderId(folderId);
+                    setUploadModalOpen(true);
+                  }}
+                />
               )}
 
               {/* Google Photos Tab */}
               {activeTab === 'photos' && currentUser?.role === 'superuser' && (
                 <PhotosManager 
-                  onImport={(items) => {
-                    console.log('Importando itens:', items);
-                    // TODO: Implement actual asset creation from Google Photos metadata/urls
+                  onImport={async (items) => {
+                    if (currentUser) {
+                      try {
+                        console.log('Importando itens:', items);
+                        // Mapear MediaItems para o formato que uploadFiles espera ou chamar repositório direto
+                        // Para simplificar, vamos criar registros no BD diretamente
+                        for (const item of items) {
+                          const { error } = await supabase.from('files').insert({
+                            folder_id: null, // Importa para a raiz por padrão
+                            name: item.filename,
+                            url: item.baseUrl, // Usando a URL base do Google (expira, mas serve para o MVP)
+                            type: item.mimeType?.startsWith('image/') ? 'image' : 'file',
+                            size: 'Google Photos',
+                            uploaded_by: currentUser.id,
+                            note: `Importado do Google Photos: ${item.id}`
+                          });
+                          if (error) throw error;
+                          await DataService.logActivity(currentUser.id, 'UPLOAD', `IMPORTE: ${item.filename}`);
+                        }
+                        
+                        alert(`${items.length} itens importados com sucesso para a pasta Raiz!`);
+                        
+                        // Atualizar stats
+                        const [dashboardStats, logs] = await Promise.all([
+                          DataService.getDashboardStats(),
+                          DataService.getLogs()
+                        ]);
+                        setStats(dashboardStats);
+                        setRecentActivities(logs.slice(0, 5));
+                      } catch (error: any) {
+                        console.error('Erro na importação:', error);
+                        alert(`Erro ao importar: ${error.message}`);
+                      }
+                    }
                   }}
                 />
               )}
@@ -522,10 +567,24 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
         onClose={() => setUploadModalOpen(false)}
         onUpload={async (files) => {
           if (currentUser) {
-            const uploadItems = files.map(f => ({ file: f, note: '' }));
-            // Need a folderId to upload to. For MVP root might be null or a general folder.
-            // Let's assume a default folder for now or show error if no folder.
-            alert("Selecione uma pasta para enviar arquivos.");
+            try {
+              const uploadItems = files.map(f => ({ file: f, note: '' }));
+              await DataService.uploadFiles(uploadTargetFolderId || '', uploadItems, currentUser.id);
+              
+              // Recarregar dados do dashboard
+              const [dashboardStats, logs] = await Promise.all([
+                DataService.getDashboardStats(),
+                DataService.getLogs()
+              ]);
+              setStats(dashboardStats);
+              setRecentActivities(logs.slice(0, 5));
+              
+              alert("Arquivos enviados com sucesso!");
+              setUploadModalOpen(false);
+            } catch (error: any) {
+              console.error("Upload error:", error);
+              alert(`Erro ao enviar arquivos: ${error.message || 'Verifique o console.'}`);
+            }
           }
         }}
       />

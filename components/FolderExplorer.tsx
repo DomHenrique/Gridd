@@ -6,9 +6,10 @@ import { Folder as FolderIcon, File, MoreVertical, Plus, ChevronRight, Home, Upl
 
 interface FolderExplorerProps {
   currentUser: User;
+  onUploadClick?: (folderId: string | null) => void;
 }
 
-export const FolderExplorer: React.FC<FolderExplorerProps> = ({ currentUser }) => {
+export const FolderExplorer: React.FC<FolderExplorerProps> = ({ currentUser, onUploadClick }) => {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [files, setFiles] = useState<FileAsset[]>([]);
@@ -123,6 +124,7 @@ export const FolderExplorer: React.FC<FolderExplorerProps> = ({ currentUser }) =
                         <Plus className="w-4 h-4" /> <span className="d-none d-sm-inline">Nova Pasta</span>
                     </button>
                     <button 
+                        onClick={() => onUploadClick?.(currentFolderId)}
                         className="btn btn-sm btn-primary d-flex align-items-center gap-2"
                         title="Upload"
                     >
