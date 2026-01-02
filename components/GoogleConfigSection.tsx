@@ -14,13 +14,11 @@ export const GoogleConfigSection: React.FC = () => {
   // Local form state
   const [formData, setFormData] = useState({
     clientId: getConfig().clientId || '',
-    clientSecret: getConfig().clientSecret || '',
     redirectUri: getConfig().redirectUri || 'http://localhost:5173/auth/callback'
   });
 
   const envValues = {
     clientId: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '',
-    clientSecret: (import.meta as any).env.VITE_GOOGLE_CLIENT_SECRET || '',
     redirectUri: (import.meta as any).env.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:5173/auth/callback'
   };
 
@@ -42,7 +40,6 @@ export const GoogleConfigSection: React.FC = () => {
   const handleUpdateRuntimeConfig = () => {
     updateConfig({
       clientId: formData.clientId,
-      clientSecret: formData.clientSecret,
       redirectUri: formData.redirectUri
     });
     setStatus(getConfigurationStatus());
@@ -50,14 +47,19 @@ export const GoogleConfigSection: React.FC = () => {
     setStep(2);
   };
 
-  const handleConnect = () => {
-    addLog('Iniciando conexão com Google...');
-    const auth = getAuthService();
-    const url = auth.getAuthorizationUrl();
-    
-    setTimeout(() => {
-        window.location.href = url;
-    }, 500);
+  const handleConnect = async () => {
+    addLog('Iniciando conexão com Google (Code Flow + PKCE)...');
+    try {
+      const auth = getAuthService();
+      const url = await auth.getAuthorizationUrl();
+      
+      setTimeout(() => {
+          window.location.href = url;
+      }, 500);
+    } catch (error) {
+      addLog(`Erro ao gerar URL: ${error}`);
+      alert('Erro ao iniciar conexão.');
+    }
   };
 
   return (
@@ -116,16 +118,6 @@ export const GoogleConfigSection: React.FC = () => {
                                 onUseEnv={() => setFormData({...formData, clientId: envValues.clientId})}
                             />
                             <InputField 
-                                label="Google Client Secret" 
-                                type="password"
-                                value={formData.clientSecret}
-                                onChange={(val) => setFormData({...formData, clientSecret: val})}
-                                placeholder={envValues.clientSecret ? "********" : "GOCSPX-..."}
-                                description="Mantenha em segredo"
-                                envValue={envValues.clientSecret}
-                                onUseEnv={() => setFormData({...formData, clientSecret: envValues.clientSecret})}
-                            />
-                            <InputField 
                                 label="URI de Redirecionamento" 
                                 value={formData.redirectUri}
                                 onChange={(val) => setFormData({...formData, redirectUri: val})}
@@ -139,7 +131,7 @@ export const GoogleConfigSection: React.FC = () => {
                         <div className="pt-4 flex justify-end">
                             <button 
                                 onClick={handleUpdateRuntimeConfig}
-                                disabled={!formData.clientId || !formData.clientSecret}
+                                disabled={!formData.clientId}
                                 className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition-all disabled:opacity-50"
                                 style={{ backgroundColor: BRAND.primaryColor }}
                             >

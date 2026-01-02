@@ -18,7 +18,6 @@ export interface GoogleAuthToken {
 
 export interface GoogleAuthConfig {
   clientId: string;
-  clientSecret: string;
   redirectUri: string;
   scopes: GooglePhotosScope[];
 }

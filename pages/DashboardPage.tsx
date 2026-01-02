@@ -191,7 +191,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
               <button
                 className="btn text-white fw-bold"
                 style={{ backgroundColor: BRAND.primaryColor }}
-                onClick={() => {
+                onClick={async () => {
                   try {
                     const googleAuth = getAuthService();
                     if (!googleAuth.isAuthenticated()) {
@@ -199,7 +199,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
                         "Para enviar arquivos, você precisa estar conectado ao Google Photos.\n\nDeseja conectar agora?"
                       );
                       if (confirmLogin) {
-                        window.location.href = googleAuth.getAuthorizationUrl();
+                        window.location.href = await googleAuth.getAuthorizationUrl();
                       }
                       return;
                     }

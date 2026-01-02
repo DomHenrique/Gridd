@@ -15,7 +15,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedUserForPerms, setSelectedUserForPerms] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isGoogleConnected, setIsGoogleConnected] = useState(false);
 
     // New User Form State
     const [newUserForm, setNewUserForm] = useState({ name: '', email: '', role: 'client' as UserRole });
@@ -27,15 +26,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
     const loadData = async () => {
         setIsLoading(true);
         try {
-            // Check Google Auth Status
-            try {
-                const googleAuth = getAuthService();
-                setIsGoogleConnected(googleAuth.isAuthenticated());
-            } catch (e) {
-                console.error("Failed to check Google Auth status", e);
-                setIsGoogleConnected(false);
-            }
-
             const fetchedUsers = await DataService.getUsers(currentUser.id);
             const fetchedFolders = await DataService.getAllFolders();
             
@@ -210,47 +200,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
                     <p className="text-gray-500 text-sm mt-1">Adicione usuários e configure permissões de acesso às pastas.</p>
                 </div>
                 <div className="flex gap-3">
-                    {!isGoogleConnected && (
-                        <button
-                            onClick={() => {
-                                try {
-                                    const googleAuth = getAuthService();
-                                    window.location.href = googleAuth.getAuthorizationUrl();
-                                } catch (e) {
-                                    console.error(e);
-                                    alert("Erro ao iniciar login Google");
-                                }
-                            }}
-                            className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all"
-                            title="Conectar ao Google Photos para gerenciar permissões"
-                        >
-                            <img src="https://www.gstatic.com/images/branding/product/1x/photos_48dp.png" alt="Google Photos" className="w-5 h-5" />
-                            Conectar Google
-                        </button>
-                    )}
                     <button 
-                        onClick={() => {
-                            try {
-                                const googleAuth = getAuthService();
-                                if (!googleAuth.isAuthenticated()) {
-                                    const confirmLogin = window.confirm(
-                                        "Para adicionar usuários e configurar pastas, você precisa estar conectado ao Google Photos.\n\nDeseja conectar agora?"
-                                    );
-                                    if (confirmLogin) {
-                                        window.location.href = googleAuth.getAuthorizationUrl();
-                                    }
-                                    return;
-                                }
-                                setIsAddModalOpen(true);
-                            } catch (e) {
-                                console.error("Google Auth Service not initialized", e);
-                                alert("Erro ao verificar conexão com Google. Recarregue a página.");
-                            }
-                        }}
-                        className={`
-                            bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all
-                            ${!isGoogleConnected ? 'opacity-50 cursor-not-allowed' : ''}
-                        `}
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all"
                     >
                         <UserPlus className="w-5 h-5" /> Novo Usuário
                     </button>

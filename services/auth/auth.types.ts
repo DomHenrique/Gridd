@@ -88,7 +88,6 @@ export interface RegisterResponse {
 
 export interface GoogleAuthConfig {
   clientId: string;
-  clientSecret: string;
   redirectUri: string;
   scopes: string[];
 }

@@ -22,7 +22,6 @@ export interface EnvConfig {
 
   // Google OAuth
   googleClientId: string;
-  googleClientSecret?: string;
   googleRedirectUri: string;
   googlePhotosScopes: string[];
   enableGooglePhotos: boolean;
@@ -121,9 +120,6 @@ function validateRequiredEnvVars(config: EnvConfig): string[] {
   }
 
   if (config.nodeEnv === 'production') {
-    if (!config.googleClientSecret) {
-      errors.push('❌ REACT_APP_GOOGLE_CLIENT_SECRET é obrigatório em produção');
-    }
     if (config.debug) {
       errors.push('⚠️  Aviso: Debug está ativado em produção');
     }
@@ -186,7 +182,6 @@ export function loadEnvConfig(): EnvConfig {
 
     // Google OAuth
     googleClientId: getEnvVar('GOOGLE_CLIENT_ID', ''),
-    googleClientSecret: getEnvVar('GOOGLE_CLIENT_SECRET'),
     googleRedirectUri: getEnvVar('GOOGLE_REDIRECT_URI', 'http://localhost:3000/auth/callback'),
     googlePhotosScopes: getEnvArray('GOOGLE_PHOTOS_SCOPES', [
       'https://www.googleapis.com/auth/photoslibrary.readonly',

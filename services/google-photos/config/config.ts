@@ -5,6 +5,7 @@
 
 import { GoogleAuthConfig, GooglePhotosScope } from '../types';
 import { initializeAuthService } from '../auth/auth.service';
+import { getEnvVar } from '../../../config/env';
 
 /**
  * Configuração padrão do Google Photos
@@ -12,20 +13,17 @@ import { initializeAuthService } from '../auth/auth.service';
 export const GOOGLE_PHOTOS_CONFIG: GoogleAuthConfig = {
   // ⚠️ IMPORTANTE: Configure estas variáveis de ambiente
   // Suporta tanto prefixos VITE_ quanto VITE_ para compatibilidade
-  clientId: (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '',
-  clientSecret: (import.meta as any).env.VITE_GOOGLE_CLIENT_SECRET || (import.meta as any).env.VITE_GOOGLE_CLIENT_SECRET || '',
-  redirectUri: (import.meta as any).env.VITE_GOOGLE_REDIRECT_URI || (import.meta as any).env.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/callback',
+  clientId: getEnvVar('GOOGLE_CLIENT_ID'),
+  redirectUri: getEnvVar('GOOGLE_REDIRECT_URI', 'http://localhost:3000/auth/callback'),
 
-  // Escopos necessários para a API Library (após 01/04/2025)
-  scopes: [
-    // Obrigatório para ler biblioteca
-    GooglePhotosScope.PHOTOS_LIBRARY_READONLY,
-    // Necessário para fazer upload
-    GooglePhotosScope.PHOTOS_LIBRARY_EDIT_APPSOURCE,
-    // Escopos de perfil para identificar o usuário
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/userinfo.email',
-  ],
+  scopes: (getEnvVar('GOOGLE_PHOTOS_SCOPES') 
+    ? getEnvVar('GOOGLE_PHOTOS_SCOPES').split(',').map(s => s.trim())
+    : [
+        GooglePhotosScope.PHOTOS_LIBRARY_READONLY,
+        GooglePhotosScope.PHOTOS_LIBRARY_EDIT_APPSOURCE,
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ]) as GooglePhotosScope[],
 };
 
 /**
@@ -167,10 +165,6 @@ export function initializeGooglePhotos(customConfig?: Partial<GoogleAuthConfig>)
     hasMissing = true;
   }
 
-  if (!config.clientSecret) {
-    console.warn('[GoogleConfig] AVISO: Google Client Secret não configurado (VITE_GOOGLE_CLIENT_SECRET).');
-    hasMissing = true;
-  }
 
   if (hasMissing) {
     console.info('[GoogleConfig] A integração será inicializada com credenciais parciais. O login pode falhar.');
@@ -189,9 +183,8 @@ export function getConfigurationStatus() {
   const config = GOOGLE_PHOTOS_CONFIG;
   return {
     hasClientId: !!config.clientId,
-    hasClientSecret: !!config.clientSecret,
     hasRedirectUri: !!config.redirectUri,
-    isConfigured: !!(config.clientId && config.clientSecret),
+    isConfigured: !!config.clientId,
   };
 }
 

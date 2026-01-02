@@ -11,7 +11,7 @@ import {
   ExternalLink,
   Download
 } from 'lucide-react';
-import { getGooglePhotosService, Album, MediaItem } from '../services/google-photos';
+import { getGooglePhotosService, getAuthService, Album, MediaItem } from '../services/google-photos';
 import { BRAND } from '../constants';
 
 interface PhotosManagerProps {
@@ -26,12 +26,19 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
   const [isImporting, setIsImporting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const photosService = getGooglePhotosService();
 
   useEffect(() => {
-    loadAlbums();
-    loadPhotos();
+    const auth = getAuthService();
+    const authed = auth.isAuthenticated();
+    setIsAuthenticated(authed);
+    
+    if (authed) {
+      loadAlbums();
+      loadPhotos();
+    }
   }, []);
 
   const loadAlbums = async () => {
@@ -115,6 +122,16 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
     }
   };
 
+  const handleConnect = async () => {
+    try {
+      const auth = getAuthService();
+      window.location.href = await auth.getAuthorizationUrl();
+    } catch (error) {
+      console.error('Erro ao iniciar conexão:', error);
+      alert('Erro ao iniciar conexão com Google Photos.');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 rounded-xl overflow-hidden border border-slate-200">
       {/* Search & Filter Header */}
@@ -173,7 +190,28 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-4 md:p-6 no-scrollbar">
-        {loading && mediaItems.length === 0 ? (
+        {!isAuthenticated ? (
+          <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white rounded-xl">
+             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                <img src="https://www.gstatic.com/images/branding/product/1x/photos_48dp.png" alt="Google Photos" className="w-12 h-12" />
+             </div>
+             <h3 className="text-xl font-bold text-slate-800 mb-2">Conecte sua conta do Google Photos</h3>
+             <p className="text-slate-500 max-w-md mb-8">
+               Para visualizar e importar suas mídias diretamente para o Gridd360, precisamos de permissão para acessar sua biblioteca do Google Photos.
+             </p>
+             <button
+               onClick={handleConnect}
+               className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 hover:bg-primary-hover transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+               style={{ backgroundColor: BRAND.primaryColor }}
+             >
+               <i className="bi bi-google"></i>
+               Conectar com Google Photos
+             </button>
+             <p className="mt-6 text-[10px] text-slate-400">
+               Suas credenciais são processadas de forma segura via Google OAuth 2.0.
+             </p>
+          </div>
+        ) : loading && mediaItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-slate-400">
             <RefreshCw size={48} className="animate-spin mb-4 opacity-20" />
             <p className="text-sm font-medium">Carregando mídias do Google Photos...</p>
@@ -225,7 +263,7 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
           </div>
         )}
 
-        {nextPageToken && (
+        {isAuthenticated && nextPageToken && (
           <div className="mt-12 flex justify-center pb-8">
             <button
               onClick={handleLoadMore}
