@@ -5,6 +5,7 @@ import { LeadCaptureModal } from '../components/LeadCaptureModal';
 import { LogoCarousel } from '../components/LogoCarousel';
 import HowItWorksSection from '../components/HowItWorksSection';
 import ServicesSection from '../components/ServicesSection';
+import WhyGridd360Section from '../components/WhyGridd360Section';
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
@@ -101,11 +102,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       <LogoCarousel />
 
       {/* Target Audience Section */}
-      <TargetAudienceSection />
+      <TargetAudienceSection onContactClick={() => setIsLeadModalOpen(true)} />
+
 
       <ServicesSection onContactClick={() => setIsLeadModalOpen(true)} />
 
       <HowItWorksSection />
+
+      <WhyGridd360Section onContactClick={() => setIsLeadModalOpen(true)} />
 
       {/* CTA Section */}
       <section className="py-5 py-lg-6" style={{ backgroundColor: `${BRAND.primaryColor}10` }}>
