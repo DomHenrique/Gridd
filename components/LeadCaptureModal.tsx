@@ -53,7 +53,8 @@ export const LeadCaptureModal: React.FC<LeadCaptureModalProps> = ({ isOpen, onCl
       if (insertError) throw insertError;
 
       // 3. Send to Webhook (if configured)
-      const webhookUrl = import.meta.env.VITE_WEBHOOK_URL;
+      // Use window._env_ fallback for runtime variable support
+      const webhookUrl = import.meta.env.VITE_WEBHOOK_URL || (window as any)._env_?.VITE_WEBHOOK_URL;
       if (webhookUrl) {
         // We don't necessarily want to block the user if the webhook fails, 
         // but we'll try to send it.

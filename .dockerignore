@@ -15,4 +15,4 @@ yarn-debug.log
 yarn-error.log
 .idea
 .vscode
-docker-compose_local.yaml
+docker-compose-local.yaml

@@ -58,4 +58,5 @@ out/
 *.key
 *.crt
 .env.local.disabled
-docker-compose_local.yaml
+docker-compose-local.yaml
+temp_build/

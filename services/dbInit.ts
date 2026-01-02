@@ -48,9 +48,9 @@ const createTables = async () => {
 };
 
 const ensureSuperUser = async () => {
-    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-    const companyDomain = import.meta.env.VITE_COMPANY_DOMAIN;
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || (window as any)._env_?.VITE_ADMIN_EMAIL;
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || (window as any)._env_?.VITE_ADMIN_PASSWORD;
+    const companyDomain = import.meta.env.VITE_COMPANY_DOMAIN || (window as any)._env_?.VITE_COMPANY_DOMAIN;
 
     if (!adminEmail || !adminPassword || !companyDomain) {
         console.warn('[System] Admin credentials or company domain not found in .env. Skipping auto-creation.');

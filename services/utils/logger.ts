@@ -123,7 +123,9 @@ class LoggerService {
   private sendToBackend(entry: LogEntry): void {
     try {
       // Aqui você pode enviar para um serviço de logging como Sentry, LogRocket, etc
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      // Desativado por enquanto para evitar erros 405 (Method Not Allowed) no console
+      /*
+      const apiUrl = import.meta.env.VITE_API_URL || (window as any)._env_?.VITE_API_URL || 'http://localhost:3001/api';
 
       fetch(`${apiUrl}/logs`, {
         method: 'POST',
@@ -132,6 +134,7 @@ class LoggerService {
       }).catch(() => {
         // Silenciosamente falha se não conseguir enviar
       });
+      */
     } catch (error) {
       // Não lançar erro durante logging
     }

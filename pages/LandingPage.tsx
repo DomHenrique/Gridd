@@ -4,6 +4,7 @@ import { TargetAudienceSection } from '../components/TargetAudienceSection';
 import { LeadCaptureModal } from '../components/LeadCaptureModal';
 import { LogoCarousel } from '../components/LogoCarousel';
 import HowItWorksSection from '../components/HowItWorksSection';
+import ServicesSection from '../components/ServicesSection';
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
@@ -102,125 +103,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       {/* Target Audience Section */}
       <TargetAudienceSection />
 
-      {/* Features Section */}
-      <section id="features" className="py-5 py-lg-6">
-        <div className="container-lg px-4">
-          <div className="text-center mb-5">
-            <h2 className="display-5 fw-bold mb-3">Por que escolher Gridd360?</h2>
-            <p className="lead text-secondary">Tudo que você precisa para gerenciar seus ativos visuais</p>
-          </div>
-
-          <div className="row g-4">
-            {/* Feature 1 */}
-            <div className="col-md-6 col-lg-4">
-              <div className="card border-0 h-100 shadow-sm hover-shadow transition">
-                <div className="card-body text-center">
-                  <div 
-                    className="rounded-circle p-3 mb-3 mx-auto"
-                    style={{ backgroundColor: `${BRAND.primaryColor}20`, width: 'fit-content' }}
-                  >
-                    <i className="bi bi-shield-check" style={{ fontSize: '2rem', color: BRAND.primaryColor }}></i>
-                  </div>
-                  <h5 className="card-title fw-bold">Segurança Total</h5>
-                  <p className="card-text text-secondary">
-                    Controle de permissões granulares e auditoria completa de todas as ações
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="col-md-6 col-lg-4">
-              <div className="card border-0 h-100 shadow-sm">
-                <div className="card-body text-center">
-                  <div 
-                    className="rounded-circle p-3 mb-3 mx-auto"
-                    style={{ backgroundColor: `${BRAND.primaryColor}20`, width: 'fit-content' }}
-                  >
-                    <i className="bi bi-lightning-charge" style={{ fontSize: '2rem', color: BRAND.primaryColor }}></i>
-                  </div>
-                  <h5 className="card-title fw-bold">Velocidade</h5>
-                  <p className="card-text text-secondary">
-                    Interface rápida e responsiva para máxima produtividade
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="col-md-6 col-lg-4">
-              <div className="card border-0 h-100 shadow-sm">
-                <div className="card-body text-center">
-                  <div 
-                    className="rounded-circle p-3 mb-3 mx-auto"
-                    style={{ backgroundColor: `${BRAND.primaryColor}20`, width: 'fit-content' }}
-                  >
-                    <i className="bi bi-graph-up" style={{ fontSize: '2rem', color: BRAND.primaryColor }}></i>
-                  </div>
-                  <h5 className="card-title fw-bold">Escalável</h5>
-                  <p className="card-text text-secondary">
-                    Cresce com seu negócio, do pequeno ao grande volume
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="col-md-6 col-lg-4">
-              <div className="card border-0 h-100 shadow-sm">
-                <div className="card-body text-center">
-                  <div 
-                    className="rounded-circle p-3 mb-3 mx-auto"
-                    style={{ backgroundColor: `${BRAND.primaryColor}20`, width: 'fit-content' }}
-                  >
-                    <i className="bi bi-people" style={{ fontSize: '2rem', color: BRAND.primaryColor }}></i>
-                  </div>
-                  <h5 className="card-title fw-bold">Colaboração</h5>
-                  <p className="card-text text-secondary">
-                    Trabalhe em equipe com compartilhamento fácil e rastreamento
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="col-md-6 col-lg-4">
-              <div className="card border-0 h-100 shadow-sm">
-                <div className="card-body text-center">
-                  <div 
-                    className="rounded-circle p-3 mb-3 mx-auto"
-                    style={{ backgroundColor: `${BRAND.primaryColor}20`, width: 'fit-content' }}
-                  >
-                    <i className="bi bi-cloud-upload" style={{ fontSize: '2rem', color: BRAND.primaryColor }}></i>
-                  </div>
-                  <h5 className="card-title fw-bold">Na Nuvem</h5>
-                  <p className="card-text text-secondary">
-                    Acesse seus arquivos de qualquer lugar, a qualquer hora
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="col-md-6 col-lg-4">
-              <div className="card border-0 h-100 shadow-sm">
-                <div className="card-body text-center">
-                  <div 
-                    className="rounded-circle p-3 mb-3 mx-auto"
-                    style={{ backgroundColor: `${BRAND.primaryColor}20`, width: 'fit-content' }}
-                  >
-                    <i className="bi bi-headset" style={{ fontSize: '2rem', color: BRAND.primaryColor }}></i>
-                  </div>
-                  <h5 className="card-title fw-bold">Suporte 24/7</h5>
-                  <p className="card-text text-secondary">
-                    Equipe dedicada pronta para ajudar você a qualquer momento
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ServicesSection onContactClick={() => setIsLeadModalOpen(true)} />
 
       <HowItWorksSection />
 

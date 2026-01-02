@@ -33,6 +33,10 @@ export interface EnvConfig {
 
   // APIs
   geminiApiKey?: string;
+
+  // Supabase
+  supabaseUrl: string;
+  supabaseAnonKey: string;
 }
 
 // ============================================================================
@@ -44,16 +48,29 @@ export interface EnvConfig {
  */
 function getEnvVar(key: string, defaultValue?: string): string {
   // Tenta diferentes prefixos (REACT_APP_, VITE_)
+  // Prioridade: window._env_ (Docker/Runtime) > import.meta.env (Vite/Build)
+  const runtimeEnv = (typeof window !== 'undefined' && (window as any)._env_) ? (window as any)._env_ : {};
   const env = import.meta.env as any;
   
+  // Normaliza a chave para buscar no window._env_ (que geralmente removemos o prefixo VITE_ no env.sh, mas vamos checar tudo)
   const value = 
+    runtimeEnv[key] ||
+    runtimeEnv[`VITE_${key}`] ||
+    runtimeEnv[`REACT_APP_${key}`] ||
     env[key] ||
     env[`REACT_APP_${key}`] ||
-    env[`VITE_${key}`] ||
-    defaultValue ||
-    '';
+    env[`VITE_${key}`];
 
-  return value;
+  if (value) return value;
+  
+  if (defaultValue) {
+    if (env.DEBUG === 'true' || runtimeEnv.VITE_DEBUG === 'true') {
+        console.warn(`[Env] Variável ${key} não encontrada, usando valor padrão.`);
+    }
+    return defaultValue;
+  }
+
+  return '';
 }
 
 /**
@@ -183,6 +200,10 @@ export function loadEnvConfig(): EnvConfig {
 
     // APIs
     geminiApiKey: getEnvVar('GEMINI_API_KEY'),
+
+    // Supabase
+    supabaseUrl: getEnvVar('SUPABASE_URL'),
+    supabaseAnonKey: getEnvVar('SUPABASE_ANON_KEY'),
   };
 
   // Valida variáveis

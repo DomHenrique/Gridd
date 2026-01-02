@@ -31,7 +31,9 @@ try {
   
   // Obter modo debug de forma segura (sem acessar process.env diretamente)
   const isDebug = document.documentElement.dataset.debug === 'true' || 
-                  import.meta.env.REACT_APP_DEBUG === 'true';
+                  import.meta.env.REACT_APP_DEBUG === 'true' ||
+                  (window as any)._env_?.VITE_DEBUG === 'true' ||
+                  (window as any)._env_?.REACT_APP_DEBUG === 'true';
   
   // Mostrar erro ao usuário
   document.body.innerHTML = `

@@ -31,5 +31,5 @@ RUN chmod +x /docker-entrypoint.d/40-env-generator.sh
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx with explicit env generation
-CMD ["/bin/sh", "-c", "/docker-entrypoint.d/40-env-generator.sh && nginx -g 'daemon off;'"]
+# Start Nginx (scripts in /docker-entrypoint.d/ run automatically)
+CMD ["nginx", "-g", "daemon off;"]

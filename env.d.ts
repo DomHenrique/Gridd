@@ -47,6 +47,9 @@ interface ImportMeta {
  * Extensão de process.env para Node.js globals
  */
 declare global {
+  interface Window {
+    _env_?: any;
+  }
   namespace NodeJS {
     interface ProcessEnv {
       NODE_ENV?: 'development' | 'production' | 'staging';
