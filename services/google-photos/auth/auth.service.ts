@@ -22,11 +22,29 @@ export class GooglePhotosAuthService {
   private config: GoogleAuthConfig;
   private currentToken: GoogleAuthToken | null = null;
   private tokenRefreshTimer: NodeJS.Timeout | null = null;
+  private listeners: ((authed: boolean) => void)[] = [];
+  public isInitialized: Promise<void>;
 
   constructor(config: GoogleAuthConfig) {
     this.config = config;
     this.loadTokenFromStorage();
-    this.syncWithSupabase();
+    this.isInitialized = this.syncWithSupabase();
+  }
+
+  /**
+   * Adiciona um listener para mudanças no estado de autenticação
+   */
+  onAuthStateChanged(callback: (authed: boolean) => void): () => void {
+    this.listeners.push(callback);
+    // Retorna função para remover listener
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== callback);
+    };
+  }
+
+  private notifyListeners() {
+    const authed = this.isAuthenticated();
+    this.listeners.forEach(l => l(authed));
   }
 
   /**
@@ -37,10 +55,19 @@ export class GooglePhotosAuthService {
     try {
       const dbTokens = await GoogleTokenService.getTokens();
       if (dbTokens) {
-        console.log('[GoogleAuth] Tokens encontrados no Supabase, atualizando estado local.');
-        this.currentToken = dbTokens;
-        this.scheduleTokenRefresh();
-        this.saveTokenToStorage();
+        // Só sobrescreve se não tivermos token local OU se o do banco for mais novo
+        const shouldUpdate = !this.currentToken || 
+                            (dbTokens.expires_at > this.currentToken.expires_at);
+
+        if (shouldUpdate) {
+          console.log('[GoogleAuth] Tokens encontrados no Supabase são mais recentes/novos, atualizando estado local.');
+          this.currentToken = dbTokens;
+          this.scheduleTokenRefresh();
+          this.saveTokenToStorage();
+          this.notifyListeners();
+        } else {
+          console.log('[GoogleAuth] Token local é mais recente que o do banco. Mantendo local.');
+        }
       } else {
         console.log('[GoogleAuth] Nenhum token encontrado no Supabase.');
       }
@@ -134,6 +161,7 @@ export class GooglePhotosAuthService {
       this.currentToken = this.parseTokenResponse(data);
       this.scheduleTokenRefresh();
       this.saveTokenToStorage();
+      this.notifyListeners();
       
       // Limpar segredos temporários
       sessionStorage.removeItem(STORAGE_KEY_VERIFIER);
@@ -181,6 +209,7 @@ export class GooglePhotosAuthService {
       this.currentToken = newToken;
       this.scheduleTokenRefresh();
       this.saveTokenToStorage();
+      this.notifyListeners();
       
       await GoogleTokenService.saveTokens(this.currentToken);
 
@@ -205,6 +234,9 @@ export class GooglePhotosAuthService {
    * Obtém um token válido, renovando automaticamente se necessário
    */
   async getValidToken(): Promise<GoogleAuthToken> {
+    // Aguarda inicialização (sync com supabase) antes de decidir
+    await this.isInitialized;
+
     const token = this.getCurrentToken();
     if (token) return token;
 
@@ -229,9 +261,11 @@ export class GooglePhotosAuthService {
         body: new URLSearchParams({ token: token.access_token }).toString(),
       });
       this.clearToken();
+      this.notifyListeners();
     } catch (error) {
       console.error('[GoogleAuth] Erro ao revogar token:', error);
       this.clearToken(); // Limpa localmente de qualquer forma
+      this.notifyListeners();
     }
   }
 

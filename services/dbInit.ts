@@ -17,7 +17,7 @@ export const initializeSystem = async () => {
     console.log('[System] Initializing...');
 
     // Initialize Google Photos integration
-    initializeGooglePhotos();
+    await initializeGooglePhotos();
 
     // 1. Check if tables exist
     const { error: profileError } = await supabase.from('profiles').select('count', { count: 'exact', head: true });

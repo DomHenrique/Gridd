@@ -27,18 +27,37 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
   const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
   const [isImporting, setIsImporting] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   const photosService = getGooglePhotosService();
+  const auth = getAuthService();
 
   useEffect(() => {
-    const auth = getAuthService();
-    const authed = auth.isAuthenticated();
-    setIsAuthenticated(authed);
-    
-    if (authed) {
-      loadAlbums();
-      loadPhotos();
-    }
+    // 1. Ouvir mudanças de estado (para reações em tempo real)
+    const unsubscribe = auth.onAuthStateChanged((authed) => {
+      setIsAuthenticated(authed);
+      if (authed) {
+        loadAlbums();
+        loadPhotos();
+      }
+    });
+
+    // 2. Aguardar inicialização (sync com Supabase)
+    const init = async () => {
+      setCheckingSession(true);
+      await auth.isInitialized;
+      const authed = auth.isAuthenticated();
+      setIsAuthenticated(authed);
+      
+      if (authed) {
+        await Promise.all([loadAlbums(), loadPhotos()]);
+      }
+      setCheckingSession(false);
+    };
+
+    init();
+
+    return () => unsubscribe();
   }, []);
 
   const loadAlbums = async () => {
@@ -189,8 +208,13 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-4 md:p-6 no-scrollbar">
-        {!isAuthenticated ? (
+      <div className="flex-grow flex flex-col overflow-auto p-4 md:p-6 no-scrollbar min-h-0">
+        {checkingSession ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400">
+            <RefreshCw size={48} className="animate-spin mb-4 opacity-20" />
+            <p className="text-sm font-medium">Verificando conexão com Google...</p>
+          </div>
+        ) : !isAuthenticated ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white rounded-xl">
              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                 <img src="https://www.gstatic.com/images/branding/product/1x/photos_48dp.png" alt="Google Photos" className="w-12 h-12" />

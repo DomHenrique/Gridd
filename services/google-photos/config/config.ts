@@ -150,7 +150,7 @@ export const DEFAULT_PERMISSIONS = {
 /**
  * Inicializa o serviço Google Photos com a configuração
  */
-export function initializeGooglePhotos(customConfig?: Partial<GoogleAuthConfig>): void {
+export async function initializeGooglePhotos(customConfig?: Partial<GoogleAuthConfig>): Promise<void> {
   const config = {
     ...GOOGLE_PHOTOS_CONFIG,
     ...customConfig,
@@ -171,9 +171,10 @@ export function initializeGooglePhotos(customConfig?: Partial<GoogleAuthConfig>)
   }
 
   // Inicializar serviço de autenticação
-  initializeAuthService(config);
+  const auth = initializeAuthService(config);
 
   console.log('[GoogleConfig] Google Photos API inicializado com sucesso.');
+  return auth.isInitialized;
 }
 
 /**
