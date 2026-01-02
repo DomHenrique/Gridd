@@ -46,7 +46,7 @@ export interface EnvConfig {
 /**
  * Obtém valor de variável de ambiente
  */
-function getEnvVar(key: string, defaultValue?: string): string {
+export const getEnvVar = (key: string, defaultValue: string = ''): string => {
   // Tenta diferentes prefixos (REACT_APP_, VITE_)
   // Prioridade: window._env_ (Docker/Runtime) > import.meta.env (Vite/Build)
   const runtimeEnv = (typeof window !== 'undefined' && (window as any)._env_) ? (window as any)._env_ : {};

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   gridd:
-    image: domhenrique/gridd:v1.18
+    image: domhenrique/gridd:v1.19
     container_name: gridd-app
     restart: always
     healthcheck:

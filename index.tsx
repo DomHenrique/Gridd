@@ -12,6 +12,7 @@ import logger from './utils/logger';
 import errorHandler from './utils/errorHandler';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { getEnvConfig } from './config/env';
 
 // ============================================================================
 // Inicialização de Variáveis de Ambiente - DEVE SER ANTES DE QUALQUER OUTRO CÓDIGO
@@ -29,11 +30,8 @@ try {
 } catch (error) {
   logger.critical('Erro na inicialização de configurações', error, undefined, 'App');
   
-  // Obter modo debug de forma segura (sem acessar process.env diretamente)
-  const isDebug = document.documentElement.dataset.debug === 'true' || 
-                  import.meta.env.REACT_APP_DEBUG === 'true' ||
-                  (window as any)._env_?.VITE_DEBUG === 'true' ||
-                  (window as any)._env_?.REACT_APP_DEBUG === 'true';
+  // Obter modo debug de forma segura via wrapper
+  const isDebug = getEnvConfig().debug;
   
   // Mostrar erro ao usuário
   document.body.innerHTML = `
