@@ -1,16 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BRAND } from '../constants';
+import { DataService } from '../services/dataService';
+import { Folder, User } from '../types';
+import { PhotosManager } from '../pages/PhotosManager';
+import { MediaItem } from '../services/google-photos';
+import { Image, Laptop, Cloud, CheckCircle2 } from 'lucide-react';
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpload?: (files: File[]) => Promise<void>;
+  currentUser: User | null;
+  targetFolderId?: string | null;
+  onSuccess?: () => void;
 }
 
-const UploadModalComponent: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) => {
-  const [files, setFiles] = useState<File[]>([]);
+const UploadModalComponent: React.FC<UploadModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  currentUser,
+  targetFolderId = null,
+  onSuccess 
+}) => {
+  const [source, setSource] = useState<'local' | 'google'>('local');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(targetFolderId);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [localFiles, setLocalFiles] = useState<File[]>([]);
+  const [googleItems, setGoogleItems] = useState<MediaItem[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [loadingFolders, setLoadingFolders] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadFolders();
+      setSelectedFolderId(targetFolderId);
+      setLocalFiles([]);
+      setGoogleItems([]);
+      setSource('local');
+    }
+  }, [isOpen, targetFolderId]);
+
+  const loadFolders = async () => {
+    setLoadingFolders(true);
+    try {
+      const data = await DataService.getAllAccessibleFolders();
+      setFolders(data);
+    } catch (e) {
+      console.error("Erro ao carregar pastas:", e);
+    } finally {
+      setLoadingFolders(false);
+    }
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -28,30 +68,41 @@ const UploadModalComponent: React.FC<UploadModalProps> = ({ isOpen, onClose, onU
     setIsDragActive(false);
 
     const droppedFiles = Array.from(e.dataTransfer.files);
-    setFiles((prev) => [...prev, ...droppedFiles]);
+    setLocalFiles((prev) => [...prev, ...droppedFiles]);
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
+    setLocalFiles((prev) => [...prev, ...selectedFiles]);
   };
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+  const removeLocalFile = (index: number) => {
+    setLocalFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
+  const handleConfirmAction = async () => {
+    if (!currentUser) return;
+    if (!selectedFolderId) {
+        alert("Por favor, selecione uma pasta de destino.");
+        return;
+    }
 
     setIsUploading(true);
     try {
-      if (onUpload) {
-        await onUpload(files);
+      if (source === 'local') {
+        if (localFiles.length === 0) return;
+        const uploadItems = localFiles.map(f => ({ file: f, note: '' }));
+        await DataService.uploadFiles(selectedFolderId, uploadItems, currentUser.id);
+      } else {
+        if (googleItems.length === 0) return;
+        await DataService.importGooglePhotos(selectedFolderId, googleItems, currentUser.id);
       }
-      setFiles([]);
+
+      if (onSuccess) onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload failed:', error);
+      alert(`Erro no processo: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -59,143 +110,148 @@ const UploadModalComponent: React.FC<UploadModalProps> = ({ isOpen, onClose, onU
 
   if (!isOpen) return null;
 
+  const hasSelection = source === 'local' ? localFiles.length > 0 : googleItems.length > 0;
+
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="modal-backdrop fade show"
-        onClick={onClose}
-      ></div>
+      <div className="modal-backdrop fade show" onClick={onClose}></div>
 
-      {/* Modal */}
-      <div className="modal fade show d-block" tabIndex={-1} role="dialog">
-        <div className="modal-dialog modal-dialog-centered" role="document">
-          <div className="modal-content border-0 shadow-lg">
-            {/* Header */}
-            <div className="modal-header border-bottom px-4 py-4">
-              <div className="d-flex align-items-center gap-3">
-                <div
-                  className="rounded-circle p-3"
-                  style={{
-                    backgroundColor: `${BRAND.primaryColor}20`,
-                  }}
-                >
-                  <i
-                    className="bi bi-cloud-upload"
-                    style={{
-                      fontSize: '1.5rem',
-                      color: BRAND.primaryColor,
-                    }}
-                  ></i>
+      <div className="modal fade show d-block" tabIndex={-1} role="dialog" style={{ zIndex: 1060 }}>
+        <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
+          <div className="modal-content border-0 shadow-lg overflow-hidden" style={{ borderRadius: '1.25rem' }}>
+            
+            {/* Header with Source Switcher */}
+            <div className="px-4 pt-4 pb-3 border-bottom bg-light">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div className="d-flex align-items-center gap-3">
+                    <div className="p-2 bg-white rounded-circle shadow-sm">
+                        <Cloud size={24} style={{ color: BRAND.primaryColor }} />
+                    </div>
+                    <div>
+                        <h5 className="mb-0 fw-bold">Enviar para o Gridd360</h5>
+                        <small className="text-secondary">Selecione a origem e o destino</small>
+                    </div>
                 </div>
-                <div>
-                  <h5 className="mb-0 fw-bold">Enviar Arquivos</h5>
-                  <small className="text-secondary">Arraste ou selecione arquivos</small>
+                <button type="button" className="btn-close" onClick={onClose} disabled={isUploading} aria-label="Fechar modal"></button>
+              </div>
+
+              <div className="row g-2">
+                <div className="col-md-6">
+                    <label className="form-label small fw-bold text-secondary text-uppercase mb-1">Pasta de Destino</label>
+                    <select 
+                        className="form-select border-0 shadow-sm"
+                        value={selectedFolderId || ''}
+                        onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                        disabled={loadingFolders || isUploading}
+                        style={{ padding: '0.6rem 1rem' }}
+                        title="Selecione a pasta de destino"
+                        aria-label="Pasta de destino"
+                    >
+                        <option value="">-- Selecione uma pasta --</option>
+                        {folders.map(f => (
+                            <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="col-md-6">
+                    <label className="form-label small fw-bold text-secondary text-uppercase mb-1">Origem dos Arquivos</label>
+                    <div className="d-flex bg-white rounded p-1 shadow-sm">
+                        <button 
+                            className={`flex-grow-1 btn btn-sm d-flex align-items-center justify-content-center gap-2 border-0 ${source === 'local' ? 'bg-primary text-white shadow-sm' : 'text-secondary'}`}
+                            style={source === 'local' ? { backgroundColor: BRAND.primaryColor } : {}}
+                            onClick={() => setSource('local')}
+                            disabled={isUploading}
+                        >
+                            <Laptop size={16} /> Meu Computador
+                        </button>
+                        <button 
+                            className={`flex-grow-1 btn btn-sm d-flex align-items-center justify-content-center gap-2 border-0 ${source === 'google' ? 'bg-primary text-white shadow-sm' : 'text-secondary'}`}
+                            style={source === 'google' ? { backgroundColor: BRAND.primaryColor } : {}}
+                            onClick={() => setSource('google')}
+                            disabled={isUploading}
+                        >
+                            <Image size={16} /> Google Photos
+                        </button>
+                    </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={onClose}
-                disabled={isUploading}
-              ></button>
             </div>
 
             {/* Body */}
-            <div className="modal-body p-4">
-              {/* Drop Zone */}
-              <div
-                className="border-2 rounded p-4 text-center mb-4"
-                style={{
-                  borderColor: isDragActive ? BRAND.primaryColor : '#dee2e6',
-                  borderStyle: 'dashed',
-                  backgroundColor: isDragActive ? `${BRAND.primaryColor}10` : '#f8f9fa',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer',
-                }}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                <i
-                  className="bi bi-cloud-arrow-up d-block mb-2"
-                  style={{
-                    fontSize: '3rem',
-                    color: isDragActive ? BRAND.primaryColor : '#ccc',
-                  }}
-                ></i>
-                <p className="mb-2 fw-bold">
-                  {isDragActive ? 'Solte os arquivos aqui' : 'Arraste arquivos aqui'}
-                </p>
-                <small className="text-secondary">ou clique para selecionar</small>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileInput}
-                  style={{
-                    position: 'absolute',
-                    opacity: 0,
-                    width: '100%',
-                    height: '100%',
-                    top: 0,
-                    left: 0,
-                    cursor: 'pointer',
-                  }}
-                />
-              </div>
-
-              {/* File List */}
-              {files.length > 0 && (
-                <div>
-                  <h6 className="fw-bold mb-3">
-                    <i className="bi bi-file-earmark me-2"></i>
-                    {files.length} arquivo{files.length !== 1 ? 's' : ''} selecionado{files.length !== 1 ? 's' : ''}
-                  </h6>
-                  <div className="list-group">
-                    {files.map((file, index) => (
-                      <div key={index} className="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
-                          <i className="bi bi-file-earmark-text"></i>
-                          <div className="flex-grow-1 min-width-0">
-                            <small className="d-block text-truncate fw-500">{file.name}</small>
-                            <small className="text-secondary">
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </small>
-                          </div>
-                        </div>
-                        <button
-                          className="btn btn-sm btn-link text-danger p-0"
-                          onClick={() => removeFile(index)}
-                          disabled={isUploading}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    ))}
+            <div className="modal-body p-0" style={{ minHeight: '400px', maxHeight: '600px', overflowY: 'auto' }}>
+              
+              {source === 'local' ? (
+                <div className="p-4">
+                  <div
+                    className="border-2 rounded-4 p-5 text-center mb-4 transition-all"
+                    style={{
+                      borderColor: isDragActive ? BRAND.primaryColor : '#e2e8f0',
+                      borderStyle: 'dashed',
+                      backgroundColor: isDragActive ? `${BRAND.primaryColor}08` : '#f8fafc',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                  >
+                    <Cloud className="d-block mx-auto mb-3 opacity-20" size={64} style={{ color: isDragActive ? BRAND.primaryColor : 'currentColor' }} />
+                    <h6 className="fw-bold mb-1">
+                      {isDragActive ? 'Solte para importar' : 'Arraste e solte arquivos aqui'}
+                    </h6>
+                    <p className="text-secondary small mb-0">ou clique para procurar no seu dispositivo</p>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileInput}
+                      className="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer"
+                      title="Clique ou arraste para selecionar arquivos locais"
+                      aria-label="Selecionar arquivos locais"
+                    />
                   </div>
-                </div>
-              )}
 
-              {/* Info Box */}
-              {files.length === 0 && (
-                <div
-                  className="alert alert-info mb-0"
-                  role="alert"
-                >
-                  <small>
-                    <i className="bi bi-info-circle me-2"></i>
-                    Máximo 100 MB por arquivo. Formatos suportados: PDF, DOC, XLS, PPT, IMG
-                  </small>
+                  {localFiles.length > 0 && (
+                    <div className="card border-0 bg-light rounded-3 overflow-hidden">
+                      <div className="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                        <span className="fw-bold small text-uppercase text-secondary">Arquivos Selecionados</span>
+                        <span className="badge rounded-pill bg-primary" style={{ backgroundColor: BRAND.primaryColor }}>{localFiles.length}</span>
+                      </div>
+                      <div className="list-group list-group-flush max-h-300 overflow-auto no-scrollbar">
+                        {localFiles.map((file, index) => (
+                          <div key={index} className="list-group-item bg-transparent border-0 px-3 py-2 d-flex justify-content-between align-items-center">
+                            <div className="d-flex align-items-center gap-2 min-w-0">
+                              <Laptop size={14} className="text-secondary" />
+                              <span className="small text-truncate d-block">{file.name}</span>
+                            </div>
+                            <button 
+                                className="btn btn-sm btn-link text-danger p-0" 
+                                onClick={() => removeLocalFile(index)}
+                                aria-label={`Remover ${file.name}`}
+                            >
+                                <i className="bi bi-x-circle"></i>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="h-100" style={{ height: '500px' }}>
+                    <PhotosManager 
+                        isPicker={true} 
+                        onSelectionChange={setGoogleItems} 
+                    />
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="modal-footer border-top px-4 py-4 gap-2">
+            <div className="modal-footer border-top p-4 gap-3 bg-light">
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-outline-secondary px-4 fw-bold"
                 onClick={onClose}
                 disabled={isUploading}
               >
@@ -203,23 +259,25 @@ const UploadModalComponent: React.FC<UploadModalProps> = ({ isOpen, onClose, onU
               </button>
               <button
                 type="button"
-                className="btn text-white fw-bold"
+                className="btn text-white px-5 fw-bold shadow-sm"
                 style={{
                   backgroundColor: BRAND.primaryColor,
-                  opacity: files.length === 0 ? 0.5 : 1,
+                  opacity: (!hasSelection || !selectedFolderId) ? 0.5 : 1,
+                  paddingTop: '0.75rem',
+                  paddingBottom: '0.75rem'
                 }}
-                onClick={handleUpload}
-                disabled={files.length === 0 || isUploading}
+                onClick={handleConfirmAction}
+                disabled={!hasSelection || !selectedFolderId || isUploading}
               >
                 {isUploading ? (
                   <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span className="spinner-border spinner-border-sm me-2"></span>
                     Enviando...
                   </>
                 ) : (
                   <>
-                    <i className="bi bi-check-circle me-2"></i>
-                    Enviar {files.length > 0 ? `(${files.length})` : ''}
+                    <CheckCircle2 size={18} className="me-2" />
+                    Confirmar Envio {hasSelection ? `(${source === 'local' ? localFiles.length : googleItems.length})` : ''}
                   </>
                 )}
               </button>
@@ -229,18 +287,9 @@ const UploadModalComponent: React.FC<UploadModalProps> = ({ isOpen, onClose, onU
       </div>
 
       <style>{`
-        .modal.show {
-          display: block;
-        }
-        .border-2 {
-          border-width: 2px !important;
-        }
-        .min-width-0 {
-          min-width: 0;
-        }
-        .fw-500 {
-          font-weight: 500;
-        }
+        .max-h-300 { max-height: 250px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .transition-all { transition: all 0.2s ease; }
       `}</style>
     </>
   );

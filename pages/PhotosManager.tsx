@@ -16,9 +16,11 @@ import { BRAND } from '../constants';
 
 interface PhotosManagerProps {
   onImport?: (items: MediaItem[]) => void;
+  isPicker?: boolean;
+  onSelectionChange?: (items: MediaItem[]) => void;
 }
 
-export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
+export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport, isPicker = false, onSelectionChange }) => {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
@@ -113,6 +115,11 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
       newSelection.add(itemId);
     }
     setSelectedItems(newSelection);
+    
+    if (onSelectionChange) {
+      const selectedMedia = mediaItems.filter(item => newSelection.has(item.id));
+      onSelectionChange(selectedMedia);
+    }
   };
 
   const handleLoadMore = () => {
@@ -187,7 +194,7 @@ export const PhotosManager: React.FC<PhotosManagerProps> = ({ onImport }) => {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {selectedItems.size > 0 && (
+          {!isPicker && selectedItems.size > 0 && (
             <button
               onClick={handleImport}
               disabled={isImporting}

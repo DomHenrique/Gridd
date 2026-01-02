@@ -493,40 +493,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
               {/* Google Photos Tab */}
               {activeTab === 'photos' && currentUser?.role === 'superuser' && (
                 <PhotosManager 
-                  onImport={async (items) => {
-                    if (currentUser) {
-                      try {
-                        console.log('Importando itens:', items);
-                        // Mapear MediaItems para o formato que uploadFiles espera ou chamar repositório direto
-                        // Para simplificar, vamos criar registros no BD diretamente
-                        for (const item of items) {
-                          const { error } = await supabase.from('files').insert({
-                            folder_id: null, // Importa para a raiz por padrão
-                            name: item.filename,
-                            url: item.baseUrl, // Usando a URL base do Google (expira, mas serve para o MVP)
-                            type: item.mimeType?.startsWith('image/') ? 'image' : 'file',
-                            size: 'Google Photos',
-                            uploaded_by: currentUser.id,
-                            note: `Importado do Google Photos: ${item.id}`
-                          });
-                          if (error) throw error;
-                          await DataService.logActivity(currentUser.id, 'UPLOAD', `IMPORTE: ${item.filename}`);
-                        }
-                        
-                        alert(`${items.length} itens importados com sucesso para a pasta Raiz!`);
-                        
-                        // Atualizar stats
-                        const [dashboardStats, logs] = await Promise.all([
-                          DataService.getDashboardStats(),
-                          DataService.getLogs()
-                        ]);
-                        setStats(dashboardStats);
-                        setRecentActivities(logs.slice(0, 5));
-                      } catch (error: any) {
-                        console.error('Erro na importação:', error);
-                        alert(`Erro ao importar: ${error.message}`);
-                      }
-                    }
+                  onImport={() => {
+                    // Abrir modal com fonte Google pré-selecionada
+                    setUploadTargetFolderId(null);
+                    setUploadModalOpen(true);
                   }}
                 />
               )}
@@ -562,30 +532,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
       `}</style>
 
       {/* Upload Modal */}
-      <UploadModalComponent
+      <UploadModalComponent 
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        onUpload={async (files) => {
-          if (currentUser) {
+        currentUser={currentUser}
+        targetFolderId={uploadTargetFolderId}
+        onSuccess={async () => {
+            // Recarregar dados do dashboard
             try {
-              const uploadItems = files.map(f => ({ file: f, note: '' }));
-              await DataService.uploadFiles(uploadTargetFolderId || '', uploadItems, currentUser.id);
-              
-              // Recarregar dados do dashboard
-              const [dashboardStats, logs] = await Promise.all([
-                DataService.getDashboardStats(),
-                DataService.getLogs()
-              ]);
-              setStats(dashboardStats);
-              setRecentActivities(logs.slice(0, 5));
-              
-              alert("Arquivos enviados com sucesso!");
-              setUploadModalOpen(false);
-            } catch (error: any) {
-              console.error("Upload error:", error);
-              alert(`Erro ao enviar arquivos: ${error.message || 'Verifique o console.'}`);
+                const [dashboardStats, logs] = await Promise.all([
+                    DataService.getDashboardStats(),
+                    DataService.getLogs()
+                ]);
+                setStats(dashboardStats);
+                setRecentActivities(logs.slice(0, 5));
+            } catch (error) {
+                console.error("Erro ao atualizar após upload:", error);
             }
-          }
         }}
       />
       </div>

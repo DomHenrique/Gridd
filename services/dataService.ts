@@ -59,8 +59,13 @@ export const DataService = {
   },
 
   getAllFolders: async (): Promise<Folder[]> => {
-      const { data } = await supabase.from('folders').select('*');
+      const { data, error } = await supabase.from('folders').select('*');
+      if (error) throw error;
       return (data || []).map(f => ({...f, ownerId: f.owner_id, parentId: f.parent_id}));
+  },
+
+  getAllAccessibleFolders: async (): Promise<Folder[]> => {
+      return DataService.getAllFolders();
   },
 
   // === FILE/FOLDER OPERATIONS ===
@@ -195,6 +200,28 @@ export const DataService = {
 
                 if (error) throw error;
                 await DataService.logActivity(userId, 'UPLOAD', file.name);
+            }
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    },
+
+    importGooglePhotos: async (folderId: string | null, items: any[], userId: string): Promise<void> => {
+        try {
+            for (const item of items) {
+                const { error } = await supabase.from('files').insert({
+                    folder_id: folderId,
+                    name: item.filename,
+                    url: item.baseUrl,
+                    type: item.mimeType?.startsWith('image/') ? 'image' : 'file',
+                    size: 'Google Photos',
+                    uploaded_by: userId,
+                    note: `Importado do Google Photos: ${item.id}`,
+                    google_media_item_id: item.id
+                });
+                if (error) throw error;
+                await DataService.logActivity(userId, 'UPLOAD', `IMPORTE: ${item.filename}`);
             }
         } catch (e) {
             console.error(e);
