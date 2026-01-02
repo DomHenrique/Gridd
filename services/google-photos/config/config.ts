@@ -20,9 +20,9 @@ export const GOOGLE_PHOTOS_CONFIG: GoogleAuthConfig = {
     ? getEnvVar('GOOGLE_PHOTOS_SCOPES').split(',').map(s => s.trim())
     : [
         GooglePhotosScope.PHOTOS_LIBRARY_READONLY,
-        GooglePhotosScope.PHOTOS_LIBRARY_EDIT_APPSOURCE,
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'https://www.googleapis.com/auth/userinfo.email',
+        GooglePhotosScope.PHOTOS_LIBRARY_APPENDONLY,
+        GooglePhotosScope.USERINFO_PROFILE,
+        GooglePhotosScope.USERINFO_EMAIL,
       ]) as GooglePhotosScope[],
 };
 

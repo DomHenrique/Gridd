@@ -23,10 +23,11 @@ export interface GoogleAuthConfig {
 }
 
 export enum GooglePhotosScope {
-  // Escopos para API Library (após mudanças de 01/04/2025)
+  // Escopos para API Library (padrão 2025)
   PHOTOS_LIBRARY_READONLY = 'https://www.googleapis.com/auth/photoslibrary.readonly',
-  PHOTOS_LIBRARY_EDIT_APPSOURCE = 'https://www.googleapis.com/auth/photoslibrary.edit.appsource',
+  PHOTOS_LIBRARY_APPENDONLY = 'https://www.googleapis.com/auth/photoslibrary.appendonly',
   PHOTOS_LIBRARY_SHARING = 'https://www.googleapis.com/auth/photoslibrary.sharing',
+  PHOTOS_LIBRARY_EDIT_APPSOURCE = 'https://www.googleapis.com/auth/photoslibrary.edit.appsource', // Pode ser restrito
   // Escopos de perfil
   USERINFO_PROFILE = 'https://www.googleapis.com/auth/userinfo.profile',
   USERINFO_EMAIL = 'https://www.googleapis.com/auth/userinfo.email',
