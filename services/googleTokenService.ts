@@ -28,7 +28,7 @@ export const GoogleTokenService = {
         const { data, error } = await supabase.from('app_settings')
             .select('value')
             .eq('key', 'google_photos_tokens')
-            .single();
+            .maybeSingle();
         
         if (error) {
             if (error.code === 'PGRST116') {

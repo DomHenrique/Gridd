@@ -153,7 +153,10 @@ export class GooglePhotosAuthService {
       });
 
       if (error) {
-        throw new Error(`Erro na Supabase Function: ${error.message || JSON.stringify(error)}`);
+        console.error('[GoogleAuth] Erro detalhado da Supabase Function:', error);
+        // Tentar extrair erro amigável se disponível
+        const errorMsg = error.details?.error_description || error.details?.error || error.message || JSON.stringify(error);
+        throw new Error(`Erro do Google: ${errorMsg}`);
       }
 
       console.log('[GoogleAuth] Tokens recebidos com sucesso do Backend.');
@@ -195,7 +198,9 @@ export class GooglePhotosAuthService {
       });
 
       if (error) {
-        throw new Error(`Erro na renovação via Backend: ${error.message}`);
+        console.error('[GoogleAuth] Erro detalhado na renovação:', error);
+        const errorMsg = error.details?.error_description || error.details?.error || error.message;
+        throw new Error(`Erro na renovação: ${errorMsg}`);
       }
 
       console.log('[GoogleAuth] Token renovado com sucesso.');

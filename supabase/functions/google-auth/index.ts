@@ -16,12 +16,14 @@ serve(async (req) => {
   }
 
   try {
-    const { action, code, code_verifier, refresh_token } = await req.json()
+    const { action, code, code_verifier, refresh_token, redirect_uri: client_redirect_uri } = await req.json()
 
     // Pegar credenciais das variáveis de ambiente do Supabase
     const client_id = Deno.env.get('GOOGLE_CLIENT_ID')
     const client_secret = Deno.env.get('GOOGLE_CLIENT_SECRET')
-    const redirect_uri = Deno.env.get('GOOGLE_REDIRECT_URI')
+    const env_redirect_uri = Deno.env.get('GOOGLE_REDIRECT_URI')
+
+    const redirect_uri = client_redirect_uri || env_redirect_uri
 
     if (!client_id || !client_secret) {
       throw new Error('Configuração do Google faltando no servidor.')
@@ -58,8 +60,12 @@ serve(async (req) => {
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Erro na API do Google:', data)
-      return new Response(JSON.stringify(data), {
+      console.error('Erro na API do Google:', JSON.stringify(data))
+      return new Response(JSON.stringify({
+        error: 'Recusado pelo Google',
+        details: data,
+        status: response.status
+      }), {
         status: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

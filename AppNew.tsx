@@ -42,22 +42,25 @@ const AppNew: React.FC = () => {
         const hasHashToken = window.location.hash.includes('access_token=');
 
         if ((code || hasHashToken) && user.role === 'superuser') {
-          console.log('[App] Detectado retorno do Google OAuth. Processando...');
+          console.log('[App] Detectado retorno do Google OAuth:', { hasCode: !!code, hasHash: hasHashToken });
           try {
             const { getAuthService: getGoogleAuth } = await import('./services/google-photos');
             const googleAuth = getGoogleAuth();
             
             if (hasHashToken) {
+              console.log('[App] Processando token legado (hash)...');
               await googleAuth.handleAuthCallback();
             } else if (code) {
+              console.log('[App] Trocando código por tokens (PKCE)...');
               await googleAuth.exchangeCodeForToken(code);
             }
             
             console.log('[App] Conexão com Google Photos estabelecida com sucesso!');
             // Limpar a URL (query e fragmento) sem recarregar a página
             window.history.replaceState({}, document.title, window.location.pathname);
-          } catch (error) {
-            console.error('[App] Erro ao processar retorno do Google:', error);
+          } catch (error: any) {
+            console.error('[App] Erro crítico ao processar retorno do Google:', error.message || error);
+            alert(`Erro na conexão com Google: ${error.message || 'Verifique o console para detalhes.'}`);
           }
         }
       }
