@@ -26,6 +26,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
   const [searchTerm, setSearchTerm] = useState('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | null>(null);
+  const [uploadInitialSource, setUploadInitialSource] = useState<'local' | 'google'>('local');
   const [loading, setLoading] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -496,6 +497,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
                   onImport={() => {
                     // Abrir modal com fonte Google pré-selecionada
                     setUploadTargetFolderId(null);
+                    setUploadInitialSource('google');
                     setUploadModalOpen(true);
                   }}
                 />
@@ -534,9 +536,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, onLogout, on
       {/* Upload Modal */}
       <UploadModalComponent 
         isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
+        onClose={() => {
+            setUploadModalOpen(false);
+            setUploadInitialSource('local'); // Reset default
+        }}
         currentUser={currentUser}
         targetFolderId={uploadTargetFolderId}
+        initialSource={uploadInitialSource}
         onSuccess={async () => {
             // Recarregar dados do dashboard
             try {

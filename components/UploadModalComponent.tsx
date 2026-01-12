@@ -12,16 +12,16 @@ interface UploadModalProps {
   currentUser: User | null;
   targetFolderId?: string | null;
   onSuccess?: () => void;
+  initialSource?: 'local' | 'google';
 }
 
 const UploadModalComponent: React.FC<UploadModalProps> = ({ 
-  isOpen, 
-  onClose, 
   currentUser,
   targetFolderId = null,
-  onSuccess 
+  onSuccess,
+  initialSource = 'local'
 }) => {
-  const [source, setSource] = useState<'local' | 'google'>('local');
+  const [source, setSource] = useState<'local' | 'google'>(initialSource);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(targetFolderId);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [localFiles, setLocalFiles] = useState<File[]>([]);
@@ -36,9 +36,9 @@ const UploadModalComponent: React.FC<UploadModalProps> = ({
       setSelectedFolderId(targetFolderId);
       setLocalFiles([]);
       setGoogleItems([]);
-      setSource('local');
+      setSource(initialSource);
     }
-  }, [isOpen, targetFolderId]);
+  }, [isOpen, targetFolderId, initialSource]);
 
   const loadFolders = async () => {
     setLoadingFolders(true);

@@ -1,4 +1,6 @@
 import React from 'react';
+import { Settings, Megaphone, BarChart3, ArrowRight } from 'lucide-react';
+import { BRAND } from '../constants';
 
 interface ServicesSectionProps {
   onContactClick: () => void;
@@ -7,87 +9,90 @@ interface ServicesSectionProps {
 const ServicesSection: React.FC<ServicesSectionProps> = ({ onContactClick }) => {
   const services = [
     {
-      title: "Eventos & Experiências",
-      description: "Criação e produção de eventos corporativos, ativações de marca e experiências imersivas inesquecíveis.",
-      icon: "event_available",
-      colorClass: "bg-primary"
+      title: "📌 PILAR 1 — ESTRATÉGIA E PLANEJAMENTO",
+      description: "Diagnóstico completo, Plano de Marketing 360, Análise de concorrência, CRM e Calendário Anual Baseado em Sazonalidade.",
+      icon: <Settings className="w-10 h-10" />,
+      colorClass: "bg-[#101663]",
+      points: [
+        "Diagnóstico completo e plano de Marketing 360",
+        "Análise de concorrência regional",
+        "Criação de calendário Promocional e Institucional anual",
+        "Plano de Mídia on e off"
+      ]
     },
     {
-      title: "Anúncios & Performance",
-      description: "Gestão de tráfego pago, SEO e otimização de conversão para maximizar o ROI do seu investimento.",
-      icon: "trending_up",
-      colorClass: "bg-secondary"
+      title: "📌 PILAR 2 — COMUNICAÇÃO E BRANDING",
+      description: "Identidade visual, Padronização, Campanhas sazonais e Comunicação Visual completa (fachadas, sinalização e frota).",
+      icon: <Megaphone className="w-10 h-10" />,
+      colorClass: "bg-[#FF6B26]",
+      points: [
+        "Identidade visual e Padronização",
+        "Campanhas sazonais e Tabloides",
+        "Comunicação Visual: fachadas e sinalização",
+        "Auditoria de marca e posicionamento"
+      ]
     },
     {
-      title: "Conteúdo & Social",
-      description: "Gestão de redes sociais, produção audiovisual e copywriting estratégico para construir autoridade.",
-      icon: "campaign",
-      colorClass: "bg-primary"
-    },
-    {
-      title: "Campanhas & Publicidade",
-      description: "Planejamento 360º de campanhas on e offline, branding e posicionamento de mercado.",
-      icon: "rocket_launch",
-      colorClass: "bg-secondary"
+      title: "📌 PILAR 3 — MARKETING DIGITAL 360°",
+      description: "Gestão de Redes Sociais, Google & Meta Ads, Conteúdos exclusivos para o varejo de construção e Produção de Motions.",
+      icon: <BarChart3 className="w-10 h-10" />,
+      colorClass: "bg-[#0d0d35]",
+      points: [
+        "Gestão de Redes sociais",
+        "Gestão de anúncios (Meta + Google Ads)",
+        "Conteúdos exclusivos para varejo de construção",
+        "Produção de conteúdos com influencers"
+      ]
     }
   ];
 
   return (
-    <section id="services" className="py-20 bg-gray-50 dark:bg-[#0f172a]">
-      <div className="container mx-auto px-4 max-w-5xl">
-        <div className="mb-12 text-center">
-          <span className="inline-block py-1 px-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-[#101663] dark:text-blue-200 text-xs font-bold uppercase tracking-wider mb-3">
-            O Que Fazemos
-          </span>
-          <h2 className="font-display font-bold text-4xl text-[#101663] dark:text-white leading-tight mb-4">
-            Tudo o que sua marca precisa, em um <span className="text-primary relative inline-block">
-              só lugar
-              <svg className="absolute w-full h-2 bottom-0 left-0 text-primary opacity-30" preserveAspectRatio="none" viewBox="0 0 100 10">
-                <path d="M0 5 Q 50 10 100 5" fill="none" stroke="currentColor" strokeWidth="3"></path>
-              </svg>
-            </span>.
+    <section id="services" className="py-24 bg-gray-50 dark:bg-[#0f172a]">
+      <div className="container-lg px-4 max-w-6xl mx-auto">
+        <div className="mb-16 text-center">
+          <span className="badge bg-primary-subtle text-primary mb-3 px-3 py-2 rounded-pill fw-bold text-uppercase">NOSSOS PILARES</span>
+          <h2 className="display-4 fw-black text-[#101663] dark:text-white mb-4">
+            Estratégia, Conteúdo e <span className="text-primary">Performance</span>
           </h2>
-          <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-2xl mx-auto">
-            Estratégias completas para conectar, engajar e converter. Do planejamento à execução.
+          <p className="lead text-secondary max-w-2xl mx-auto">
+            Marketing organizado, eficiente e criado sob medida para a realidade do mercado de construção.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="row g-4">
           {services.map((service, index) => (
-            <div 
-              key={index}
-              className="group relative overflow-hidden bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 dark:border-slate-800"
-            >
-              <div className={`absolute top-0 left-0 w-1 h-full ${service.colorClass} group-hover:w-2 transition-all`}></div>
-              <div className="p-8 pl-10 flex items-start gap-5">
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 text-white ${service.colorClass} shadow-lg shadow-orange-500/20`}>
-                  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-                  <span className="material-icons text-3xl">{service.icon}</span>
+            <div key={index} className="col-lg-4">
+              <div className="card h-100 border-0 rounded-4 shadow-sm hover:shadow-xl transition-all p-5">
+                <div className={`w-16 h-16 rounded-3 flex items-center justify-center mb-6 text-white ${service.colorClass} shadow-lg`}>
+                  {service.icon}
                 </div>
-                <div>
-                  <h3 className="font-display font-bold text-xl text-slate-800 dark:text-white mb-3 group-hover:text-primary transition-colors">
-                    {service.title}
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm">
-                    {service.description}
-                  </p>
-                </div>
+                <h3 className="h5 fw-bold text-[#101663] dark:text-white mb-3">
+                  {service.title}
+                </h3>
+                <p className="text-secondary small mb-4">
+                  {service.description}
+                </p>
+                <ul className="list-unstyled mb-0">
+                  {service.points.map((point, i) => (
+                    <li key={i} className="d-flex align-items-start gap-2 mb-2 small text-muted">
+                      <div className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-primary"></div>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-16 text-center">
           <button 
             onClick={onContactClick}
-            className="inline-flex items-center gap-2 bg-[#101663] hover:bg-black text-white font-bold py-4 px-10 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all duration-200 group"
+            className="btn btn-primary btn-lg px-5 py-3 fw-bold rounded-pill shadow-lg shadow-orange-500/20 active:scale-95 transition-all group"
           >
-            Solicitar Orçamento
-            <span className="material-icons text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            Solicitar Consultoria
+            <ArrowRight className="ms-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
-          <p className="mt-4 text-xs text-slate-400 dark:text-slate-500 font-medium tracking-wide">
-            Transforme sua marca com a GRID Marketing 360
-          </p>
         </div>
       </div>
     </section>
