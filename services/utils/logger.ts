@@ -3,6 +3,8 @@
  * Centraliza todos os logs com contexto e níveis
  */
 
+import { getApiUrl } from '../../config/env';
+
 type LogLevel = 'info' | 'success' | 'warn' | 'error' | 'debug';
 
 interface LogEntry {
@@ -125,7 +127,7 @@ class LoggerService {
       // Aqui você pode enviar para um serviço de logging como Sentry, LogRocket, etc
       // Desativado por enquanto para evitar erros 405 (Method Not Allowed) no console
       /*
-      const apiUrl = import.meta.env.VITE_API_URL || (window as any)._env_?.VITE_API_URL || 'http://localhost:3001/api';
+      const apiUrl = getApiUrl();
 
       fetch(`${apiUrl}/logs`, {
         method: 'POST',

@@ -16,6 +16,8 @@ interface UploadModalProps {
 }
 
 const UploadModalComponent: React.FC<UploadModalProps> = ({ 
+  isOpen,
+  onClose,
   currentUser,
   targetFolderId = null,
   onSuccess,

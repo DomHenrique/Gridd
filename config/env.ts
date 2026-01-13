@@ -116,7 +116,7 @@ function validateRequiredEnvVars(config: EnvConfig): string[] {
   }
 
   if (!config.sessionSecret || config.sessionSecret.includes('mudeme')) {
-    errors.push('❌ REACT_APP_SESSION_SECRET deve ser configurado (não use valores padrão)');
+    errors.push('⚠️  Aviso: VITE_SESSION_SECRET não configurado ou usando valor padrão. Configure para maior segurança.');
   }
 
   if (config.nodeEnv === 'production') {
@@ -143,7 +143,7 @@ function validateEnvFormats(config: EnvConfig): string[] {
 
   // Valida Google Client ID
   if (!config.googleClientId.includes('.apps.googleusercontent.com')) {
-    errors.push('❌ REACT_APP_GOOGLE_CLIENT_ID parece inválido (deve terminar com .apps.googleusercontent.com)');
+    errors.push('❌ VITE_GOOGLE_CLIENT_ID parece inválido (deve terminar com .apps.googleusercontent.com)');
   }
 
   // Valida timeout
