@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Folder, FolderPermission, UserRole, AccessLevel } from '../types';
 import { DataService } from '../services/dataService';
-import { Users, UserPlus, Shield, Check, X, Lock, Unlock, Folder as FolderIcon, ChevronRight, ChevronDown, CheckCircle2, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Shield, Check, X, Lock, Unlock, Folder as FolderIcon, ChevronRight, ChevronDown, CheckCircle2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { getAuthService } from '../services/google-photos/auth/auth.service';
 
@@ -17,7 +17,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
     const [isLoading, setIsLoading] = useState(true);
 
     // New User Form State
-    const [newUserForm, setNewUserForm] = useState({ name: '', email: '', role: 'client' as UserRole });
+    const [newUserForm, setNewUserForm] = useState({ name: '', email: '', password: '', role: 'client' as UserRole });
+    const [showPassword, setShowPassword] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -46,30 +48,50 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
 
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newUserForm.name || !newUserForm.email) {
+        if (!newUserForm.name || !newUserForm.email || !newUserForm.password) {
             alert("Por favor, preencha todos os campos obrigatórios.");
             return;
         }
 
+        setIsCreating(true);
+
         try {
-            // Nota: No Supabase Real, a criação de usuário Auth deve ser feita via Admin ou Convite.
-            // Aqui vamos simular criando o perfil, mas o usuário precisará se registrar com o mesmo email.
-            // Em uma implementação real completa, usaríamos uma Edge Function.
-            const { data, error } = await supabase.from('profiles').insert({
-                email: newUserForm.email,
-                full_name: newUserForm.name,
-                role: newUserForm.role,
-                id: crypto.randomUUID() // Placeholder - real ID viria do Auth
+            // Invokes the 'create-user' Edge Function
+            const { data, error } = await supabase.functions.invoke('create-user', {
+                body: {
+                    email: newUserForm.email,
+                    password: newUserForm.password,
+                    fullName: newUserForm.name,
+                    role: newUserForm.role
+                }
             });
 
-            if (error) throw error;
+            if (error) {
+                // Tenta extrair mensagem de erro mais amigável
+                let errorMessage = error.message;
+                try {
+                     if (error instanceof Error) errorMessage = error.message;
+                     // Sometimes context is in the body parsed
+                     console.error("Function error:", error);
+                } catch(e) {}
+                
+                throw new Error(errorMessage || "Erro ao conectar com função de criação.");
+            }
             
+            if (data?.error) {
+                 throw new Error(data.error);
+            }
+
             setIsAddModalOpen(false);
-            setNewUserForm({ name: '', email: '', role: 'client' });
-            loadData();
-            alert("Perfil de usuário criado. O usuário deve se registrar com este e-mail.");
+            setNewUserForm({ name: '', email: '', password: '', role: 'client' });
+            await loadData(); // Reload list
+            alert("Usuário criado com sucesso!");
+
         } catch (e: any) {
+            console.error("Falha na criação:", e);
             alert(`Erro ao criar usuário: ${e.message}`);
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -324,7 +346,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
             {/* Add User Modal */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in-up">
                         <h3 className="font-display font-bold text-xl mb-4 text-secondary">Novo Usuário</h3>
                         <form onSubmit={handleCreateUser} className="space-y-4">
                             <div>
@@ -350,6 +372,27 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
                                 />
                             </div>
                             <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Senha Inicial</label>
+                                <div className="relative">
+                                    <input 
+                                        type={showPassword ? "text" : "password"}
+                                        className="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none pr-10"
+                                        value={newUserForm.password}
+                                        onChange={e => setNewUserForm({...newUserForm, password: e.target.value})}
+                                        required
+                                        minLength={6}
+                                        title="Defina uma senha inicial (mínimo 6 caracteres)"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-1">Tipo de Acesso</label>
                                 <select 
                                     className="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none bg-white"
@@ -359,11 +402,25 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
                                 >
                                     <option value="client">Cliente (Acesso Restrito)</option>
                                     <option value="superuser">Superusuário (Acesso Total)</option>
+                                    <option value="employee">Funcionário (Acesso Parcial)</option>
                                 </select>
                             </div>
                             <div className="flex gap-3 mt-6">
-                                <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-2 border border-gray-200 rounded-lg font-bold text-gray-500 hover:bg-gray-50">Cancelar</button>
-                                <button type="submit" className="flex-1 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary-hover shadow-lg">Criar Usuário</button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsAddModalOpen(false)} 
+                                    className="flex-1 py-2 border border-gray-200 rounded-lg font-bold text-gray-500 hover:bg-gray-50"
+                                    disabled={isCreating}
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="flex-1 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary-hover shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isCreating}
+                                >
+                                    {isCreating ? 'Criando...' : 'Criar Usuário'}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -372,3 +429,4 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
         </div>
     );
 };
+
