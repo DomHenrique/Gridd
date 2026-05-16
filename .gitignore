@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
 
 # Editor directories and files
 .vscode/*
@@ -22,41 +23,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Variáveis de ambiente
-.env
-.env.local
-.env.*.local
-.env.production.local
-.env.development.local
-.env.test.local
-
-# Arquivos de uploads
-uploads/
-*.tmp
-
-# Logs
-logs/
-*.log
-
-# Build
-build/
-out/
-
-# Cache
-.cache
-.eslintcache
-
-# IDE
-.vscode
-.idea
-*.sublime-project
-*.sublime-workspace
-
-# Segurança
-*.pem
-*.key
-*.crt
-.env.local.disabled
-docker-compose-local.yaml
-temp_build/

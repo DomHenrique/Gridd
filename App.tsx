@@ -1,767 +1,1254 @@
-import React, { useState, useEffect } from 'react';
-import { User, Folder, FileAsset, ActivityLog, Notification } from './types';
-import { AuthService, DataService } from './services/dataService';
-import { UploadModal } from './components/UploadModal';
-import { FileDetailModal } from './components/FileDetailModal';
-import { PortfolioSection } from './components/PortfolioSection';
-import { UserManagement } from './components/UserManagement';
-import { 
-    LayoutDashboard, 
-    Folder as FolderIcon, 
-    LogOut, 
-    Bell, 
-    Menu, 
-    FolderPlus, 
-    ChevronRight, 
-    Image as ImageIcon,
-    FileText,
-    Activity,
-    Shield,
-    Zap,
-    CheckCircle,
-    ArrowRight,
-    Users,
-    Edit2
-} from 'lucide-react';
-import { BRAND } from './constants';
-import { TargetAudienceSection } from './components/TargetAudienceSection';
 
-// --- COMPONENTS: PUBLIC INSTITUTIONAL SITE ---
+import React, { useState, useCallback, useEffect } from 'react';
+import { supabase } from './lib/supabase';
+import { uploadFile, deleteFile } from './services/storage';
+import { Client, User, View, Folder } from './types';
+import Header from './components/Header';
+import Dashboard from './components/Dashboard';
+import AlbumView from './components/AlbumView';
+import Modal from './components/Modal';
+import Login from './components/Login';
+import { PlusIcon, CameraIcon, PencilIcon, TrashIcon, KeyIcon, ShieldCheckIcon, ArrowLeftIcon, TagIcon, FileIcon } from './components/icons';
+import NoAdminNotification from './components/NoAdminNotification';
 
-const LandingPage = ({ onNavigateToLogin }: { onNavigateToLogin: () => void }) => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-    return (
-        <div className="min-h-screen bg-white font-body text-slate-800 flex flex-col">
-            {/* Navbar */}
-            <nav className="sticky top-0 z-50 bg-secondary text-white shadow-lg">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold font-display">G</div>
-                        <h1 className="font-display font-bold text-xl tracking-tight">GRID<span className="text-primary">360</span></h1>
-                    </div>
-                    
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center gap-8">
-                        <a href="#features" className="hover:text-primary transition-colors text-sm font-medium">Soluções</a>
-                        <a href="#portfolio" className="hover:text-primary transition-colors text-sm font-medium">Portfólio</a>
-                        <a href="#contact" className="hover:text-primary transition-colors text-sm font-medium">Contato</a>
-                        <button 
-                            onClick={onNavigateToLogin}
-                            className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-full font-bold text-sm transition-all shadow-lg shadow-orange-500/20 transform hover:-translate-y-0.5"
-                        >
-                            Área do Cliente
-                        </button>
-                    </div>
-
-                    {/* Mobile Menu Toggle */}
-                    <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                        <Menu className="w-6 h-6" />
-                    </button>
-                </div>
-                
-                {/* Mobile Menu Dropdown */}
-                {isMenuOpen && (
-                    <div className="md:hidden bg-secondary-light border-t border-white/10 p-4 space-y-4">
-                        <a href="#features" className="block hover:text-primary">Soluções</a>
-                        <a href="#portfolio" className="block hover:text-primary">Portfólio</a>
-                        <button 
-                            onClick={onNavigateToLogin}
-                            className="w-full bg-primary text-white py-3 rounded-lg font-bold"
-                        >
-                            Acessar Sistema
-                        </button>
-                    </div>
-                )}
-            </nav>
-
-            {/* Hero Section */}
-            <header className="relative bg-secondary py-20 lg:py-32 overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2"></div>
-                
-                <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-                    <div className="text-white space-y-6 animate-fade-in">
-                        <div className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-xs font-bold tracking-wide text-primary border border-white/10">
-                            NOVA PLATAFORMA 2.0
-                        </div>
-                        <h1 className="font-display font-extrabold text-4xl lg:text-6xl leading-tight">
-                            Centralize seus ativos visuais com <span className="text-primary">inteligência</span>.
-                        </h1>
-                        <p className="text-lg text-gray-300 max-w-xl">
-                            A Gridd360 oferece uma gestão completa para franquias e grandes marcas. Organize, compartilhe e controle o acesso aos seus materiais de marketing em um único lugar.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                            <button onClick={onNavigateToLogin} className="px-8 py-4 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-lg shadow-xl shadow-orange-900/20 transition-all flex items-center justify-center gap-2">
-                                Acessar Minha Conta <ArrowRight className="w-5 h-5" />
-                            </button>
-                            <button className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-xl font-bold text-lg transition-all border border-white/10">
-                                Agendar Demo
-                            </button>
-                        </div>
-                    </div>
-                    <div className="hidden lg:block relative">
-                         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                             <img 
-                                src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                                alt="Dashboard Preview" 
-                                className="rounded-lg shadow-inner opacity-90"
-                             />
-                             {/* Floating Badges */}
-                             <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl flex items-center gap-3 animate-bounce-slow">
-                                 <div className="bg-green-100 p-2 rounded-full text-green-600"><CheckCircle className="w-6 h-6" /></div>
-                                 <div>
-                                     <p className="text-xs text-gray-500 font-bold uppercase">Status</p>
-                                     <p className="font-bold text-secondary">Sistema Operacional</p>
-                                 </div>
-                             </div>
-                         </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Target Audience Section */}
-            <TargetAudienceSection />
-
-            {/* Features Section */}
-            <section id="features" className="py-20 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="font-display font-bold text-3xl text-secondary mb-4">Por que escolher a Gridd360?</h2>
-                        <p className="text-gray-600 max-w-2xl mx-auto">Nossa arquitetura foi desenhada pensando na escalabilidade de redes de franquias e departamentos de marketing.</p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            { icon: Shield, title: "Segurança Total", desc: "Controle granular de permissões por usuário e pastas criptografadas." },
-                            { icon: Zap, title: "Upload Inteligente", desc: "Integração com Google Photos e sistema de anotações pré-upload." },
-                            { icon: Users, title: "Multi-Cliente", desc: "Ambientes segregados para cada cliente com personalização de marca." }
-                        ].map((feature, idx) => (
-                            <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all">
-                                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 text-primary">
-                                    <feature.icon className="w-7 h-7" />
-                                </div>
-                                <h3 className="font-display font-bold text-xl text-secondary mb-3">{feature.title}</h3>
-                                <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Portfolio Section */}
-            <section id="portfolio" className="py-12 bg-gray-50/50 border-t border-gray-100">
-                 <PortfolioSection />
-            </section>
-
-             {/* Footer */}
-             <footer className="bg-secondary text-white py-12 border-t border-white/10 mt-auto">
-                <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-8">
-                    <div className="col-span-1 md:col-span-2">
-                        <h2 className="font-display font-bold text-2xl tracking-tight mb-4">GRID<span className="text-primary">360</span></h2>
-                        <p className="text-gray-400 max-w-sm">A plataforma definitiva para gestão de ativos digitais corporativos.</p>
-                    </div>
-                    <div>
-                        <h4 className="font-bold mb-4">Plataforma</h4>
-                        <ul className="space-y-2 text-gray-400 text-sm">
-                            <li><a href="#" className="hover:text-primary">Login</a></li>
-                            <li><a href="#" className="hover:text-primary">Suporte</a></li>
-                            <li><a href="#" className="hover:text-primary">Documentação</a></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="font-bold mb-4">Legal</h4>
-                        <ul className="space-y-2 text-gray-400 text-sm">
-                            <li><a href="#" className="hover:text-primary">Privacidade</a></li>
-                            <li><a href="#" className="hover:text-primary">Termos de Uso</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div className="max-w-7xl mx-auto px-6 pt-8 mt-8 border-t border-white/10 text-center text-gray-500 text-sm">
-                    © 2024 Gridd360 Manager. Todos os direitos reservados.
-                </div>
-             </footer>
-        </div>
-    );
-};
-
-// --- COMPONENTS: AUTH & SYSTEM ---
-
-const LoginView = ({ onLogin, onBack }: { onLogin: (email: string) => void, onBack: () => void }) => {
-    const [email, setEmail] = useState('cliente@rede.com');
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        await onLogin(email);
-        setLoading(false);
-    }
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-secondary relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-            
-            <button 
-                onClick={onBack}
-                className="absolute top-6 left-6 text-white/50 hover:text-white flex items-center gap-2 transition-colors z-20"
-            >
-                ← Voltar ao site
-            </button>
-
-            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative z-10 animate-fade-in">
-                <div className="text-center mb-8">
-                    <h1 className="font-display font-bold text-3xl text-secondary">
-                        {BRAND.logoText}<span className="text-primary">{BRAND.logoSuffix}</span>
-                    </h1>
-                    <p className="text-gray-500 text-sm mt-2">Área Restrita</p>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email de Acesso</label>
-                        <input 
-                            type="email" 
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                            placeholder="seu@email.com"
-                        />
-                    </div>
-                    <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded border border-gray-100">
-                        <p>Dica: Use <b>admin@gridd360.com</b> para Superuser</p>
-                        <p>ou <b>cliente@rede.com</b> para Cliente</p>
-                    </div>
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3.5 rounded-lg shadow-lg shadow-orange-500/20 transition-all transform active:scale-95 disabled:opacity-70"
-                    >
-                        {loading ? 'Validando...' : 'Entrar no Sistema'}
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-const ActivityTable = ({ logs }: { logs: ActivityLog[] }) => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h3 className="font-display font-bold text-lg text-secondary flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" /> Atividades Recentes
-            </h3>
-        </div>
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-semibold">
-                    <tr>
-                        <th className="px-6 py-3">Ação</th>
-                        <th className="px-6 py-3">Item</th>
-                        <th className="px-6 py-3">Usuário</th>
-                        <th className="px-6 py-3">Data</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                    {logs.map(log => (
-                        <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-6 py-4">
-                                <span className={`
-                                    px-2 py-1 rounded text-[10px] font-bold
-                                    ${log.action === 'UPLOAD' ? 'bg-green-100 text-green-700' : ''}
-                                    ${log.action === 'DELETE' ? 'bg-red-100 text-red-700' : ''}
-                                    ${log.action === 'RENAME' ? 'bg-blue-100 text-blue-700' : ''}
-                                    ${log.action === 'CREATE_FOLDER' ? 'bg-purple-100 text-purple-700' : ''}
-                                    ${log.action === 'USER_CREATE' ? 'bg-indigo-100 text-indigo-700' : ''}
-                                    ${log.action === 'PERM_UPDATE' ? 'bg-orange-100 text-orange-700' : ''}
-                                    ${log.action === 'UPDATE_FOLDER' ? 'bg-teal-100 text-teal-700' : ''}
-                                `}>
-                                    {log.action}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 font-medium text-gray-700">{log.targetName}</td>
-                            <td className="px-6 py-4 text-gray-500">{log.userName}</td>
-                            <td className="px-6 py-4 text-gray-400 text-xs">
-                                {new Date(log.timestamp).toLocaleString()}
-                            </td>
-                        </tr>
-                    ))}
-                    {logs.length === 0 && (
-                        <tr>
-                            <td colSpan={4} className="px-6 py-8 text-center text-gray-400">Nenhuma atividade registrada.</td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
+const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement> & { label: string; isTextArea?: boolean }> = ({ label, id, isTextArea, ...props }) => (
+    <div className="mb-4">
+        <label htmlFor={id} className="block text-gray-400 text-sm font-bold mb-2">{label}</label>
+        {isTextArea ? (
+            <textarea id={id} {...props} className="shadow appearance-none border border-slate-700 rounded-xl w-full py-3 px-4 bg-slate-900 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent transition-all" />
+        ) : (
+            <input id={id} {...props} className="shadow appearance-none border border-slate-700 rounded-xl w-full py-3 px-4 bg-slate-900 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent transition-all" />
+        )}
     </div>
 );
 
-// --- MAIN APP COMPONENT ---
+const App: React.FC = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [session, setSession] = useState<any>(null); // Store Supabase session
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  
+  const [view, setView] = useState<View>('dashboard');
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
-export default function App() {
-    // Routes: 'home' (public site) | 'login' | 'app' (dashboard)
-    const [currentRoute, setCurrentRoute] = useState<'home' | 'login' | 'app'>('home');
-    
-    const [user, setUser] = useState<User | null>(null);
-    const [view, setView] = useState<'dashboard' | 'albums' | 'users'>('dashboard');
-    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-    
-    // Data State
-    const [folders, setFolders] = useState<Folder[]>([]);
-    const [files, setFiles] = useState<FileAsset[]>([]);
-    const [logs, setLogs] = useState<ActivityLog[]>([]);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [breadcrumbs, setBreadcrumbs] = useState<{id: string, name: string}[]>([]);
-    const [selectedFile, setSelectedFile] = useState<FileAsset | null>(null);
-    
-    // UI State
-    const [isUploadOpen, setIsUploadOpen] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  // Modals state
+  const [isCreateClientModalOpen, setCreateClientModalOpen] = useState(false);
+  const [isEditClientModalOpen, setEditClientModalOpen] = useState(false);
+  const [isManageUsersModalOpen, setManageUsersModalOpen] = useState(false);
+  const [isAddPhotoModalOpen, setAddPhotoModalOpen] = useState(false);
+  const [viewingAddMemberForm, setViewingAddMemberForm] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  
+  // App Initialization State
+  const [hasAdmin, setHasAdmin] = useState<boolean | null>(null); // null = loading
+  const [initialLoading, setInitialLoading] = useState(true);
 
-    // Initial Load
-    useEffect(() => {
-        if(user) {
-            refreshData();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, currentFolderId, view]);
+  // Manage Users / Permissions State
+  const [editingUserPermissions, setEditingUserPermissions] = useState<User | null>(null);
 
-    const refreshData = async () => {
-        if (!user) return;
+  // Create Client Form State
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientDesc, setNewClientDesc] = useState('');
 
-        // Load Logs
-        const fetchedLogs = await DataService.getLogs();
-        setLogs(fetchedLogs);
+  // Edit Client Form State
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editClientName, setEditClientName] = useState('');
+  const [editClientDesc, setEditClientDesc] = useState('');
 
-        // Load Notifications
-        const notifs = await DataService.getNotifications();
-        setNotifications(notifs);
+  // Add User Form State
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'user' | 'manager'>('user');
+  const [newUserAllowedClients, setNewUserAllowedClients] = useState<string[]>([]);
+  // Credentials Success Modal State
+  const [createdUserCredentials, setCreatedUserCredentials] = useState<{email: string, password: string} | null>(null);
 
-        if (view === 'albums') {
-            const fetchedFolders = await DataService.getFolders(currentFolderId, user.id, user.role);
-            setFolders(fetchedFolders);
+  // Add Photo Form State
+  const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
+  const [newPhotoTags, setNewPhotoTags] = useState('');
+  const [photoPreviews, setPhotoPreviews] = useState<{name: string, url: string, type: string}[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [photoError, setPhotoError] = useState<string>('');
+  const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | null>(null);
 
-            if (currentFolderId) {
-                const fetchedFiles = await DataService.getFiles(currentFolderId);
-                setFiles(fetchedFiles);
-            } else {
-                setFiles([]);
-            }
-        }
-    };
-
-    const handleLogin = async (email: string) => {
-        const foundUser = await AuthService.login(email);
-        if (foundUser) {
-            setUser(foundUser);
-            // Default logic logic
-            if (foundUser.role === 'client') {
-                 // Try to find first accessible folder since assignedRootFolderId is deprecated in favor of permissions
-                 // But for compatibility with existing logic, we just reset view to Albums
-                 setCurrentFolderId(null); 
-                 setBreadcrumbs([]);
-                 setView('albums');
-            } else {
-                setView('dashboard');
-            }
-            setCurrentRoute('app');
-        } else {
-            alert("Usuário não encontrado.");
-        }
-    };
-
-    const handleFolderClick = (folder: Folder) => {
-        setCurrentFolderId(folder.id);
-        setBreadcrumbs([...breadcrumbs, { id: folder.id, name: folder.name }]);
-    };
-
-    const handleBreadcrumbClick = (id: string, index: number) => {
-        setCurrentFolderId(id);
-        setBreadcrumbs(breadcrumbs.slice(0, index + 1));
-    };
-
-    const handleCreateFolder = async () => {
-        const name = prompt("Nome da nova pasta:");
-        if (name && user) {
-            const note = prompt("Adicione uma descrição/anotação para esta pasta (opcional):") || "";
-            try {
-                await DataService.createFolder(currentFolderId, name, note, user.id);
-                refreshData();
-            } catch (e: any) {
-                alert(e.message);
-            }
-        }
-    };
-
-    const handleEditFolder = async (folder: Folder) => {
-        const newName = prompt("Editar nome da pasta:", folder.name);
-        if (newName === null) return; // Cancelled
+  // Check for Admin Existence
+  const checkAdminStatus = useCallback(async () => {
+    try {
+        // Use RPC function to bypass RLS for this specific check
+        const { data, error } = await supabase.rpc('app_has_admin');
         
-        const newNote = prompt("Editar descrição/anotação:", folder.note || "");
-        if (newNote === null) return; // Cancelled
+        if (error) {
+             console.error("Error checking admin:", error);
+             // Fallback: If RPC fails (e.g. not deployed), assume false to show config screen
+             setHasAdmin(false); 
+        } else {
+            setHasAdmin(data);
+        }
+    } catch (e) {
+        console.error("Failed to check admin status:", e);
+        setHasAdmin(false);
+    } finally {
+        setInitialLoading(false);
+    }
+  }, []);
 
-        if (user) {
-            try {
-                await DataService.updateFolder(folder.id, newName || folder.name, newNote || "", user.id);
-                refreshData();
-            } catch (e: any) {
-                alert(e.message);
+  // Data Fetching
+  const fetchData = useCallback(async () => {
+      try {
+          // Fetch Clients
+          const { data: clientsData, error: clientsError } = await supabase
+              .from('clients')
+              .select(`*, photos (*)`)
+              .order('created_at', { ascending: false });
+          
+          if (clientsError) throw clientsError;
+          console.log('DEBUG: Raw clientsData from Supabase:', clientsData);
+
+          // Fetch Folders
+          const { data: folderData, error: foldersError } = await supabase.from('folders').select('*');
+          if (foldersError) throw foldersError;
+
+          // Normalize Client Data
+          const mappedClients: Client[] = (clientsData || []).map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              description: c.description,
+              coverImage: c.cover_image || `https://placehold.co/800x600/1e1e2e/8b5cf6?text=${encodeURIComponent(c.name)}`,
+              photos: (c.photos || []).map((p: any) => ({
+                  id: p.id,
+                  url: p.url,
+                  uploadedBy: p.uploaded_by,
+                  timestamp: p.timestamp || p.created_at,
+                  tags: p.tags || [],
+                  folderId: p.folder_id,
+                  mimeType: p.mime_type,
+                  size: p.size,
+                  originalName: p.original_name
+              })).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+              folders: (folderData || [])
+                  .filter((f: any) => f.client_id === c.id)
+                  .map((f: any) => ({
+                      id: f.id,
+                      clientId: f.client_id,
+                      parentId: f.parent_id,
+                      name: f.name,
+                      createdAt: f.created_at,
+                      createdBy: f.created_by,
+                      thumbnailUrl: f.thumbnail_url
+                  }))
+          }));
+
+          setClients(mappedClients);
+
+          // Fetch Users (Profiles)
+          const { data: usersData, error: usersError } = await supabase
+              .from('profiles')
+              .select('*');
+          
+          if (usersError) throw usersError;
+
+          const mappedUsers: User[] = (usersData || []).map((u: any) => ({
+              id: u.id,
+              email: u.email,
+              role: u.role,
+              name: u.full_name || u.name || 'Sem Nome',
+              allowedClientIds: u.allowed_client_ids || []
+          }));
+
+          setUsers(mappedUsers);
+
+      } catch (error) {
+          console.error("Error fetching data:", error);
+      }
+  }, []);
+
+  // Initial Admin Check
+  useEffect(() => {
+    checkAdminStatus();
+  }, [checkAdminStatus]);
+
+  // Session Management
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+         // Fetch profile logic would go here ideally, but for now we fetch all users and filter
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Sync Session to CurrentUser (from profiles/users list)
+  useEffect(() => {
+      
+      if (session?.user) {
+          if (users.length > 0) {
+            // Try to find in loaded list
+            const matchedUser = users.find(u => u.email === session.user.email);
+            if (matchedUser) {
+                setCurrentUser(matchedUser);
+            } else {
+                // Fallback: Fetch this specific profile
+                supabase.from('profiles').select('*').eq('email', session.user.email).single()
+                .then(({ data, error }) => {
+                    if (data) {
+                        const directUser: User = {
+                            id: data.id,
+                            email: data.email,
+                            role: data.role,
+                            name: data.full_name || data.name || 'Sem Nome',
+                            allowedClientIds: data.allowed_client_ids || []
+                        };
+                        setCurrentUser(directUser);
+                    } else {
+                        console.error("Profile definitely not found:", error);
+                        // Stop loading even if error, to show something
+                        // Maybe set a "guest" state or force logout?
+                    }
+                });
             }
-        }
+          } else {
+             // Users list empty, but we have session. RLS might be hiding others.
+             // Fetch ONLY me.
+             supabase.from('profiles').select('*').eq('email', session.user.email).single()
+                .then(({ data, error }) => {
+                    if (data) {
+                        const directUser: User = {
+                            id: data.id,
+                            email: data.email,
+                            role: data.role,
+                            name: data.full_name || data.name || 'Sem Nome',
+                            allowedClientIds: data.allowed_client_ids || []
+                        };
+                        setCurrentUser(directUser);
+                    } else {
+                        console.error("Could not fetch self profile:", error);
+                    }
+                });
+          }
+      } else if (!session) {
+          setCurrentUser(null);
+      }
+  }, [session, users]);
+
+  useEffect(() => {
+      if (hasAdmin) {
+        fetchData();
+      }
+  }, [hasAdmin, fetchData]);
+
+  // Sync selected Client if it changes in background (e.g. after photo upload)
+  useEffect(() => {
+      if (selectedClient) {
+          const updated = clients.find(c => c.id === selectedClient.id);
+          if (updated) setSelectedClient(updated);
+      }
+  }, [clients, selectedClient]); 
+
+  
+  useEffect(() => {
+    return () => {
+      photoPreviews.forEach(p => URL.revokeObjectURL(p.url));
+    };
+  }, [photoPreviews]);
+
+  const handleLogin = useCallback(async (email: string, password: string): Promise<boolean> => {
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+    });
+
+    if (error) {
+        console.error("Login failed:", error.message);
+        return false;
+    }
+    return true;
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setView('dashboard');
+  }, []);
+
+  const handleSelectClient = useCallback((client: Client) => {
+    const isRestrictedUser = currentUser?.role === 'user';
+    const allowedIds = currentUser?.allowedClientIds || [];
+
+    if (isRestrictedUser && !allowedIds.includes(client.id)) {
+        alert("Acesso Negado: Você não tem permissão para visualizar os arquivos deste cliente.");
+        return;
+    }
+    setSelectedClient(client);
+    setView('client');
+  }, [currentUser]);
+
+  const handleBackToDashboard = useCallback(() => {
+    setSelectedClient(null);
+    setView('dashboard');
+  }, []);
+  
+
+
+  const handleCreateClient = useCallback(async () => {
+    if (!newClientName.trim()) return;
+    
+    // Pre-flight check for duplicate names (case-insensitive)
+    const existingClient = clients.find(c => c.name.toLowerCase() === newClientName.trim().toLowerCase());
+    if (existingClient) {
+        alert(`Já existe um cliente com o nome "${existingClient.name}". Por favor, escolha um nome diferente.`);
+        return;
     }
 
-    const handleUpload = async (fileList: {file: File, note: string}[]) => {
-        if (currentFolderId && user) {
-            try {
-                await DataService.uploadFiles(currentFolderId, fileList, user.id);
-                refreshData();
-            } catch (e: any) {
-                console.error(e);
+    const newClientId = `client-${Date.now()}`;
+    const coverImage = `https://placehold.co/800x600/1e1e2e/8b5cf6?text=${encodeURIComponent(newClientName)}`;
+
+    try {
+        const { error } = await supabase.from('clients').insert({
+            id: newClientId,
+            name: newClientName.trim(),
+            description: newClientDesc,
+            cover_image: coverImage
+        });
+
+        if (error) {
+            if (error.code === '23505') { // Unique violation
+                throw new Error('Já existe um cliente com este nome cadastrado no banco de dados.');
             }
+            throw error;
         }
-    };
 
-    const handleDeleteFile = async (id: string) => {
-        if (confirm("Tem certeza que deseja excluir?") && user) {
-            try {
-                await DataService.deleteFile(id, user.id);
-                refreshData();
-            } catch (e: any) {
-                console.error(e);
+        // Auto-assign creator if they are a regular user
+        if (currentUser?.role === 'user') {
+            const updatedIds = [...(currentUser.allowedClientIds || []), newClientId];
+            await supabase.from('profiles').update({ allowed_client_ids: updatedIds }).eq('email', currentUser.email);
+        }
+
+        await fetchData();
+        setCreateClientModalOpen(false);
+        setNewClientName('');
+        setNewClientDesc('');
+
+    } catch (e) {
+        console.error("Error creating client:", e);
+        alert("Erro ao criar cliente.");
+    }
+
+  }, [newClientName, newClientDesc, currentUser, fetchData]);
+
+  const handleOpenEditClient = useCallback((client: Client) => {
+    setEditingClient(client);
+    setEditClientName(client.name);
+    setEditClientDesc(client.description);
+    setEditClientModalOpen(true);
+  }, []);
+
+  const handleUpdateClient = useCallback(async () => {
+    if (!editingClient || !editClientName.trim()) return;
+
+    // Pre-flight check for duplicate names (excluding self)
+    const existingClient = clients.find(c => c.id !== editingClient.id && c.name.toLowerCase() === editClientName.trim().toLowerCase());
+    if (existingClient) {
+        alert(`Já existe outro cliente com o nome "${existingClient.name}". Por favor, escolha um nome diferente.`);
+        return;
+    }
+
+    try {
+         const { error } = await supabase.from('clients').update({
+            name: editClientName.trim(),
+            description: editClientDesc,
+        }).eq('id', editingClient.id);
+
+        if (error) {
+            if (error.code === '23505') { // Unique violation
+                throw new Error('Já existe um cliente com este nome cadastrado no banco de dados.');
             }
+            throw error;
         }
-    };
 
-    const handleRenameFile = async (id: string, currentName: string) => {
-        const newName = prompt("Novo nome:", currentName);
-        if (newName && user) {
-            await DataService.renameFile(id, newName, user.id);
-            refreshData();
+        await fetchData();
+        setEditClientModalOpen(false);
+        setEditingClient(null);
+        setEditClientName('');
+        setEditClientDesc('');
+
+    } catch (e) {
+        console.error("Error updating client:", e);
+        alert("Erro ao atualizar cliente.");
+    }
+  }, [editingClient, editClientName, editClientDesc, fetchData]);
+
+  const handleDeleteClient = useCallback(async () => {
+    if (!clientToDelete) return;
+
+    try {
+        if (clientToDelete.photos) {
+            await Promise.all(clientToDelete.photos.map(p => deleteFile(p.url)));
         }
-    };
 
-    const handleLogout = () => {
-        setUser(null);
-        setBreadcrumbs([]);
-        setCurrentFolderId(null);
-        setFiles([]);
-        setFolders([]);
-        setCurrentRoute('home'); // Go back to public site
+        const { error } = await supabase.from('clients').delete().eq('id', clientToDelete.id);
+        if (error) throw error;
+
+        await fetchData();
+        setClientToDelete(null);
+
+    } catch (e) {
+         console.error("Error deleting client:", e);
+         alert("Erro ao excluir cliente.");
     }
 
-    // --- ROUTING LOGIC ---
+  }, [clientToDelete, fetchData]);
 
-    if (currentRoute === 'home') {
-        return <LandingPage onNavigateToLogin={() => setCurrentRoute('login')} />;
+  const handleAddUser = useCallback(async () => {
+    if (!newUserEmail.trim() || users.some(u => u.email === newUserEmail)) return;
+
+    // Validate Mandatory Client Selection for 'user' role
+    if (newUserRole === 'user' && newUserAllowedClients.length === 0) {
+        alert("Atenção: Para adicionar um membro 'Staff/Criativo', você deve selecionar pelo menos um cliente para ele ter acesso.");
+        return;
     }
 
-    if (currentRoute === 'login') {
-        return <LoginView onLogin={handleLogin} onBack={() => setCurrentRoute('home')} />;
+    // Generate a random temporary password
+    const tempPassword = Math.random().toString(36).slice(-8) + "!Aa1";
+    
+    try {
+        // Call Edge Function to create user securely
+        const { data, error } = await supabase.functions.invoke('create-user', {
+            body: { 
+                email: newUserEmail, 
+                password: tempPassword,
+                role: currentUser?.role === 'admin' ? newUserRole : 'user',
+                name: newUserEmail.split('@')[0],
+                allowed_client_ids: newUserRole === 'user' ? newUserAllowedClients : [] 
+            }
+        });
+
+        if (error) {
+            console.error("DEBUG Edge function returned error object:", error);
+            // supabase-js functions.invoke usually puts the text response in context or error.message
+            let errorText = error.message;
+            if (error.context) {
+              try {
+                const contextJson = await error.context.json();
+                errorText = contextJson.error || JSON.stringify(contextJson);
+              } catch (e) {
+                try { errorText = await error.context.text(); } catch(e2) {}
+              }
+            }
+            alert("Erro detalhado da Função: " + errorText);
+            throw error;
+        }
+        
+        // Show success modal instead of alert
+        setCreatedUserCredentials({ email: newUserEmail, password: tempPassword });
+
+        await fetchData();
+        setNewUserEmail('');
+        setNewUserRole('user');
+        setNewUserAllowedClients([]); // Reset selection
+        setViewingAddMemberForm(false); // Return to list view
+        // setManageUsersModalOpen(false); // Keep modal open to show success or list? User flow suggests maybe returning to list or closing. Let's keep separate success modal logic as is, but maybe return to list.
+        // The success modal is separate, so we can keep this open or close it. 
+        // Let's close the form view (return to list) so they see the new user there?
+        // Actually, previous logic closed the whole modal.
+        // For better UX, let's keep modal open but switch back to list
+        
+    } catch (e: any) {
+        console.error("Error adding user:", e);
+        // Better error message handling
+        const msg = e.context?.json?.error || e.message || "Erro desconhecido";
+        alert(`Erro ao adicionar usuário: ${msg}. \n\nVerifique se a função 'create-user' está implantada.`);
     }
+  }, [newUserEmail, users, currentUser, newUserRole, fetchData, newUserAllowedClients]);
 
-    if (!user) {
-        // Fallback safety
-        return <LoginView onLogin={handleLogin} onBack={() => setCurrentRoute('home')} />;
+  const toggleUserClientAccess = async (clientId: string) => {
+      if (!editingUserPermissions) return;
+
+      const currentIds = editingUserPermissions.allowedClientIds || [];
+      const hasAccess = currentIds.includes(clientId);
+      
+      let newIds: string[];
+      if (hasAccess) {
+          newIds = currentIds.filter(id => id !== clientId);
+      } else {
+          newIds = [...currentIds, clientId];
+      }
+
+      try {
+          const { error } = await supabase.from('profiles').update({
+              allowed_client_ids: newIds
+          }).eq('email', editingUserPermissions.email);
+
+          if (error) throw error;
+
+          setEditingUserPermissions({ ...editingUserPermissions, allowedClientIds: newIds });
+          await fetchData();
+
+      } catch (e) {
+          console.error("Error updating permissions:", e);
+      }
+  };
+
+  const handleAddPhoto = useCallback(async () => {
+    if (newPhotoFiles.length === 0 || !selectedClient || !currentUser || isUploading) return;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    setPhotoError('');
+
+    const totalFiles = newPhotoFiles.length;
+    let completedFiles = 0;
+
+    try {
+      const parsedTags = newPhotoTags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+
+      for (const file of newPhotoFiles) {
+          try {
+              // Upload to Storage
+              const photoUrl = await uploadFile(file, selectedClient.name);
+              
+              // Insert Metadata to DB
+              const { error } = await supabase.from('photos').insert({
+                  id: `asset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  client_id: selectedClient.id,
+                  url: photoUrl,
+                  uploaded_by: currentUser.name,
+                  tags: parsedTags,
+                  timestamp: new Date().toISOString(),
+                  folder_id: uploadTargetFolderId,
+                  mime_type: file.type,
+                  size: file.size,
+                  original_name: file.name
+              });
+
+              if (error) throw error;
+
+              // Log Activity
+              await supabase.from('activity_logs').insert({
+                  client_id: selectedClient.id,
+                  folder_id: uploadTargetFolderId,
+                  user_id: currentUser.id, // Assuming currentUser has ID, if not use email or fetch profile
+                  action_type: 'upload',
+                  details: { fileName: file.name, fileSize: file.size, fileType: file.type }
+              });
+              
+              completedFiles++;
+              setUploadProgress(Math.round((completedFiles / totalFiles) * 100));
+          } catch (err: any) {
+              console.error(`Error uploading file ${file.name}:`, err);
+              // We could continue or stop. For now, we log and continue best effort, or throw?
+              // Let's stop if one fails to avoid partial state confusion for user or implement better UI for partials.
+              // For simplicity, let's just log and try next? 
+              // Actually, better to inform user.
+              // setPhotoError(`Erro no arquivo ${file.name}`);
+          }
+      }
+
+      await fetchData();
+
+      setAddPhotoModalOpen(false);
+      setNewPhotoFiles([]);
+      setNewPhotoTags('');
+      setPhotoPreviews([]);
+      setUploadTargetFolderId(null);
+    } catch (error) {
+      console.error("Failed to upload:", error);
+      setPhotoError("Falha ao fazer upload de alguns arquivos.");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
+  }, [newPhotoFiles, selectedClient, currentUser, isUploading, newPhotoTags, fetchData, uploadTargetFolderId]);
 
-    // --- DASHBOARD APP RENDER ---
+  const handleDeletePhoto = useCallback(async (clientId: string, photoId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    const photo = client?.photos.find(p => p.id === photoId);
+    
+    if (!photo) return;
 
-    return (
-        <div className="flex min-h-screen bg-background font-body">
-            {/* Sidebar */}
-            <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-secondary text-white transition-all duration-300 flex flex-col fixed h-full z-20 shadow-2xl`}>
-                <div className="p-6 flex items-center justify-between">
-                    {isSidebarOpen ? (
-                        <h1 className="font-display font-bold text-2xl tracking-tight">GRID<span className="text-primary">360</span></h1>
-                    ) : (
-                        <h1 className="font-display font-bold text-xl text-primary mx-auto">G360</h1>
-                    )}
-                </div>
-                
-                <nav className="flex-1 mt-6 px-3 space-y-2">
-                    <button 
-                        onClick={() => setView('dashboard')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${view === 'dashboard' ? 'bg-primary text-white shadow-lg' : 'text-gray-300 hover:bg-white/10'}`}
-                    >
-                        <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-                        {isSidebarOpen && <span className="font-medium">Dashboard</span>}
-                    </button>
-                    <button 
-                        onClick={() => setView('albums')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${view === 'albums' ? 'bg-primary text-white shadow-lg' : 'text-gray-300 hover:bg-white/10'}`}
-                    >
-                        <FolderIcon className="w-5 h-5 flex-shrink-0" />
-                        {isSidebarOpen && <span className="font-medium">Meus Álbuns</span>}
-                    </button>
-                    {user.role === 'superuser' && (
-                        <button 
-                            onClick={() => setView('users')}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${view === 'users' ? 'bg-primary text-white shadow-lg' : 'text-gray-300 hover:bg-white/10'}`}
-                        >
-                            <Users className="w-5 h-5 flex-shrink-0" />
-                            {isSidebarOpen && <span className="font-medium">Usuários</span>}
-                        </button>
-                    )}
-                </nav>
+    try {
+        await deleteFile(photo.url);
+        
+        const { error } = await supabase.from('photos').delete().eq('id', photoId);
+        if (error) throw error;
 
-                <div className="p-4 border-t border-white/10">
-                    <div className="flex items-center gap-3 p-2 rounded-lg bg-black/20 mb-3">
-                        <img src={user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full border border-primary" />
-                        {isSidebarOpen && (
-                            <div className="overflow-hidden">
-                                <p className="text-sm font-bold truncate">{user.name}</p>
-                                <p className="text-xs text-gray-400 capitalize">{user.role}</p>
+        // Log Activity
+        await supabase.from('activity_logs').insert({
+            client_id: clientId,
+            folder_id: photo.folderId, // Assuming photo object has folderId
+            user_id: session?.user?.id,
+            action_type: 'delete',
+            details: { fileName: photo.originalName || 'arquivo', photoId: photoId }
+        });
+
+        await fetchData();
+    } catch (e) {
+        console.error("Error deleting photo:", e);
+    }
+  }, [clients, fetchData, session]);
+
+  const handleCreateFolder = useCallback(async (clientId: string, parentId: string | null, name: string) => {
+      try {
+          const { error } = await supabase.from('folders').insert({
+              client_id: clientId,
+              parent_id: parentId,
+              name: name,
+              created_by: session?.user?.id
+          });
+
+          if (error) throw error;
+
+          // Log Activity
+          await supabase.from('activity_logs').insert({
+              client_id: clientId,
+              folder_id: parentId, // Parent folder
+              user_id: session?.user?.id,
+              action_type: 'create_folder',
+              details: { folderName: name }
+          });
+          await fetchData();
+      } catch (e: any) {
+          console.error("Error creating folder:", e);
+          alert("Erro ao criar pasta: " + e.message);
+      }
+  }, [session, fetchData]);
+  
+  const handleUpdateFolder = useCallback(async (clientId: string, folderId: string, updates: { name?: string; thumbnail_url?: string }) => {
+      try {
+          const { error } = await supabase.from('folders').update(updates).eq('id', folderId);
+
+          if (error) throw error;
+
+          // Log Activity (Rename or Update Thumbnail)
+          await supabase.from('activity_logs').insert({
+              client_id: clientId,
+              folder_id: folderId,
+              user_id: session?.user?.id,
+              action_type: 'create_folder', // reusing or new type 'update_folder'? 'create_folder' is close enough for log or I can ignore logging for thumbnail updates to keep simple
+              details: { folderId, updates }
+          });
+          
+          await fetchData();
+      } catch (e: any) {
+           console.error("Error updating folder:", e);
+           alert("Erro ao atualizar pasta: " + e.message);
+      }
+  }, [session, fetchData]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Clear previous previews
+    photoPreviews.forEach(p => URL.revokeObjectURL(p.url));
+    setPhotoPreviews([]);
+    setPhotoError('');
+    
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const validFiles: File[] = [];
+      const newPreviews: {name: string, url: string, type: string}[] = [];
+
+      Array.from(files).forEach((file: File) => {
+          // Validate size logic if needed
+          if (file.size > MAX_FILE_SIZE) {
+             // Maybe warn?
+             console.warn(`File ${file.name} too large`);
+             return; 
+          }
+          validFiles.push(file);
+          
+          if (file.type.startsWith('image/')) {
+              newPreviews.push({ name: file.name, url: URL.createObjectURL(file), type: 'image' });
+          } else {
+              newPreviews.push({ name: file.name, url: '', type: 'file' });
+          }
+      });
+
+      setNewPhotoFiles(validFiles);
+      setPhotoPreviews(newPreviews);
+    } else {
+      setNewPhotoFiles([]);
+      setPhotoPreviews([]);
+    }
+  };
+
+  if (initialLoading) {
+     return <div className="min-h-screen bg-brand-darker flex items-center justify-center text-white">Carregando sistema...</div>;
+  }
+
+  if (hasAdmin === false) {
+      return <NoAdminNotification />;
+  }
+
+  // Show Login if no session
+  if (!session) {
+    return <Login onLogin={handleLogin} />;
+  }
+  
+  // Show "Loading User Profile" if session exists but currentUser not yet matched
+  if (!currentUser) {
+       return <div className="min-h-screen bg-brand-darker flex items-center justify-center text-white">Carregando perfil...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-darker text-brand-light font-sans selection:bg-brand-accent selection:text-white">
+      <Header currentUser={currentUser} onLogout={handleLogout} />
+      <main className="container mx-auto p-4 md:p-8">
+        {view === 'dashboard' && (
+          <Dashboard 
+            clients={clients} 
+            onSelectClient={handleSelectClient}
+            currentUser={currentUser}
+            onOpenCreateClientModal={() => setCreateClientModalOpen(true)}
+            onOpenManageUsersModal={() => setManageUsersModalOpen(true)}
+            onEditClient={handleOpenEditClient}
+            onDeleteClient={(client) => setClientToDelete(client)}
+          />
+        )}
+        {view === 'client' && selectedClient && (
+          <AlbumView 
+            project={selectedClient} 
+            onBack={handleBackToDashboard}
+            onOpenAddPhotoModal={(folderId) => {
+                setUploadTargetFolderId(folderId || null);
+                setAddPhotoModalOpen(true);
+            }}
+            onDeletePhoto={handleDeletePhoto}
+            onCreateFolder={handleCreateFolder}
+            onUpdateFolder={handleUpdateFolder}
+            currentUser={currentUser}
+          />
+        )}
+      </main>
+
+      {/* Create Client Modal */}
+      <Modal isOpen={isCreateClientModalOpen} onClose={() => setCreateClientModalOpen(false)} title="Novo Cliente">
+          <form onSubmit={(e) => { e.preventDefault(); handleCreateClient(); }}>
+              <FormInput label="Nome do Cliente" id="clientName" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} required />
+              <FormInput label="Descrição da Campanha" id="clientDesc" isTextArea value={newClientDesc} onChange={(e) => setNewClientDesc(e.target.value)} />
+              <button type="submit" className="w-full flex justify-center items-center gap-2 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-brand-accent/20">
+                  <PlusIcon className="w-5 h-5" /> Criar Cliente
+              </button>
+          </form>
+      </Modal>
+
+      {/* Edit Client Modal */}
+      <Modal isOpen={isEditClientModalOpen} onClose={() => setEditClientModalOpen(false)} title="Editar Cliente">
+          <form onSubmit={(e) => { e.preventDefault(); handleUpdateClient(); }}>
+              <FormInput label="Nome do Cliente" id="editClientName" value={editClientName} onChange={(e) => setEditClientName(e.target.value)} required />
+              <FormInput label="Descrição da Campanha" id="editClientDesc" isTextArea value={editClientDesc} onChange={(e) => setEditClientDesc(e.target.value)} />
+              <button type="submit" className="w-full flex justify-center items-center gap-2 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-brand-accent/20">
+                  <PencilIcon className="w-5 h-5" /> Salvar Alterações
+              </button>
+          </form>
+      </Modal>
+
+       {/* Delete Client Confirmation Modal */}
+       <Modal 
+        isOpen={!!clientToDelete} 
+        onClose={() => setClientToDelete(null)} 
+        title="Excluir Cliente"
+      >
+        <div>
+            <p className="text-gray-300 mb-2">Tem certeza que deseja excluir o cliente <strong>{clientToDelete?.name}</strong>?</p>
+            <p className="text-red-400 text-sm mb-6 font-semibold bg-red-400/10 p-2 rounded border border-red-400/20">Esta ação apagará todos os {clientToDelete?.photos.length} arquivos associados e não pode ser desfeita.</p>
+            
+            <div className="flex justify-end gap-3">
+                <button
+                    onClick={() => setClientToDelete(null)}
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium"
+                >
+                    Cancelar
+                </button>
+                <button
+                    onClick={handleDeleteClient}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium shadow-lg shadow-red-900/20 flex items-center gap-2"
+                >
+                    <TrashIcon className="w-4 h-4" /> Excluir Cliente
+                </button>
+            </div>
+        </div>
+      </Modal>
+
+      {/* Manage Users Modal */}
+      <Modal isOpen={isManageUsersModalOpen} onClose={() => { setManageUsersModalOpen(false); setEditingUserPermissions(null); setViewingAddMemberForm(false); }} title={viewingAddMemberForm ? "Novo Membro" : "Gerenciar Equipe"} maxWidth="max-w-4xl">
+          {viewingAddMemberForm ? (
+              // Add Member Form View
+              <div className="space-y-4">
+                  <button 
+                       onClick={() => setViewingAddMemberForm(false)}
+                       className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-2"
+                   >
+                       <ArrowLeftIcon className="w-4 h-4" /> Voltar para lista
+                   </button>
+                   
+                   <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700">
+                        <form onSubmit={(e) => { e.preventDefault(); handleAddUser(); }} className="space-y-6">
+                            
+                            {/* Email Input */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-400 mb-2">E-mail</label>
+                                <input 
+                                    type="email" 
+                                    placeholder="email@agencia.com" 
+                                    value={newUserEmail} 
+                                    onChange={(e) => setNewUserEmail(e.target.value)} 
+                                    className="w-full shadow appearance-none border border-slate-700 rounded-xl py-3 px-4 bg-slate-900 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent" 
+                                    required 
+                                />
                             </div>
-                        )}
-                    </div>
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-2 py-2 text-red-300 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors text-sm">
-                        <LogOut className="w-4 h-4 flex-shrink-0" />
-                        {isSidebarOpen && <span>Sair</span>}
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
-                
-                {/* Header */}
-                <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
-                            <Menu className="w-5 h-5" />
-                        </button>
-                        {view === 'albums' && (
-                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <span className="text-gray-400">Álbuns</span>
-                                {breadcrumbs.map((crumb, idx) => (
-                                    <React.Fragment key={crumb.id}>
-                                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                                        <button 
-                                            onClick={() => handleBreadcrumbClick(crumb.id, idx)}
-                                            className="hover:text-primary font-medium transition-colors"
-                                        >
-                                            {crumb.name}
-                                        </button>
-                                    </React.Fragment>
-                                ))}
-                             </div>
-                        )}
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <button 
-                                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                                className="p-2 text-gray-500 hover:bg-gray-100 rounded-full relative transition-colors"
-                            >
-                                <Bell className="w-5 h-5" />
-                                {notifications.filter(n => !n.isRead).length > 0 && (
-                                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse"></span>
-                                )}
-                            </button>
-
-                            {/* Notifications Dropdown */}
-                            {isNotificationsOpen && (
-                                <div className="absolute top-12 right-0 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-fade-in">
-                                    <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                                        <h3 className="font-bold text-secondary text-sm">Notificações</h3>
-                                        <button className="text-xs text-primary font-bold hover:underline">Marcar como lidas</button>
+                            
+                            {/* Role Select */}
+                            {currentUser.role === 'admin' && (
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-400 mb-2">Cargo</label>
+                                    <div className="flex gap-4">
+                                        <label className={`flex-1 flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${newUserRole === 'user' ? 'border-brand-accent bg-brand-accent/10' : 'border-slate-700 bg-slate-800 hover:border-slate-600'}`}>
+                                            <input type="radio" className="hidden" name="role" value="user" checked={newUserRole === 'user'} onChange={() => setNewUserRole('user')} />
+                                            <span className={`font-bold ${newUserRole === 'user' ? 'text-brand-accent' : 'text-gray-400'}`}>Staff / Criativo</span>
+                                        </label>
+                                        <label className={`flex-1 flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${newUserRole === 'manager' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-800 hover:border-slate-600'}`}>
+                                            <input type="radio" className="hidden" name="role" value="manager" checked={newUserRole === 'manager'} onChange={() => setNewUserRole('manager')} />
+                                            <span className={`font-bold ${newUserRole === 'manager' ? 'text-blue-500' : 'text-gray-400'}`}>Gerente</span>
+                                        </label>
                                     </div>
-                                    <div className="max-h-80 overflow-y-auto">
-                                        {notifications.length === 0 ? (
-                                            <div className="p-6 text-center text-gray-400 text-sm">Nenhuma notificação nova</div>
+                                </div>
+                            )}
+
+                             {/* Client Select (Conditional) */}
+                            {newUserRole === 'user' && (
+                                 <div className="relative group">
+                                     <label className="block text-sm font-bold text-gray-400 mb-2">Acesso aos Clientes</label>
+                                     <div className="bg-slate-800 border border-slate-700 rounded-xl max-h-60 overflow-y-auto">
+                                        {clients.length === 0 ? (
+                                             <p className="p-4 text-center text-gray-500 text-sm">Nenhum cliente cadastrado.</p>
                                         ) : (
-                                            notifications.map(n => (
-                                                <div key={n.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!n.isRead ? 'bg-blue-50/30' : ''}`}>
-                                                    <div className="flex gap-3">
-                                                        <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!n.isRead ? 'bg-primary' : 'bg-gray-300'}`}></div>
-                                                        <div>
-                                                            <p className="font-bold text-sm text-gray-800">{n.title}</p>
-                                                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{n.message}</p>
-                                                            <p className="text-[10px] text-gray-400 mt-2">{new Date(n.timestamp).toLocaleString()}</p>
-                                                        </div>
+                                            clients.map(client => (
+                                                <label key={client.id} className="flex items-center gap-3 p-3 hover:bg-slate-700/50 cursor-pointer border-b border-slate-700/50 last:border-0 transition-colors">
+                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${newUserAllowedClients.includes(client.id) ? 'bg-brand-accent border-brand-accent' : 'border-slate-600 bg-slate-900'}`}>
+                                                        {newUserAllowedClients.includes(client.id) && <ShieldCheckIcon className="w-3.5 h-3.5 text-white" />}
                                                     </div>
-                                                </div>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="hidden"
+                                                        checked={newUserAllowedClients.includes(client.id)}
+                                                        onChange={() => {
+                                                            setNewUserAllowedClients(prev => 
+                                                                prev.includes(client.id) ? prev.filter(c => c !== client.id) : [...prev, client.id]
+                                                            );
+                                                        }}
+                                                    />
+                                                    <span className="text-sm text-gray-300 font-medium">{client.name}</span>
+                                                </label>
                                             ))
                                         )}
-                                    </div>
-                                </div>
+                                     </div>
+                                     <p className="text-xs text-gray-500 mt-2 ml-1">Selecione quais clientes este membro poderá acessar.</p>
+                                 </div>
                             )}
+
+                            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-accent/20 text-base mt-2">
+                                <PlusIcon className="w-5 h-5"/> Criar Usuário
+                            </button>
+                        </form>
+                   </div>
+              </div>
+          ) : editingUserPermissions ? (
+              <div className="space-y-4">
+                   <button 
+                        onClick={() => setEditingUserPermissions(null)}
+                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-2"
+                    >
+                        <ArrowLeftIcon className="w-4 h-4" /> Voltar para lista
+                    </button>
+                    
+                    <div className="mb-4">
+                        <h3 className="text-lg font-bold text-white">Permissões de Acesso</h3>
+                        <p className="text-sm text-gray-400">Gerenciando acesso para: <span className="text-brand-accent font-semibold">{editingUserPermissions.name}</span></p>
+                    </div>
+
+                    <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-700 max-h-64 overflow-y-auto">
+                        {clients.length === 0 ? (
+                            <p className="p-4 text-center text-gray-500">Nenhum cliente cadastrado.</p>
+                        ) : (
+                            <ul className="divide-y divide-slate-800">
+                                {clients.map(client => {
+                                    const hasAccess = editingUserPermissions.allowedClientIds?.includes(client.id);
+                                    return (
+                                        <li 
+                                            key={client.id} 
+                                            className={`flex items-center justify-between p-3 hover:bg-slate-800/50 transition-colors cursor-pointer ${hasAccess ? 'bg-slate-800/30' : ''}`}
+                                            onClick={() => toggleUserClientAccess(client.id)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${hasAccess ? 'bg-brand-accent border-brand-accent' : 'border-slate-600'}`}>
+                                                    {hasAccess && <ShieldCheckIcon className="w-3.5 h-3.5 text-white" />}
+                                                </div>
+                                                <span className={hasAccess ? 'text-white font-medium' : 'text-gray-400'}>{client.name}</span>
+                                            </div>
+                                            {hasAccess && <span className="text-xs text-brand-accent font-bold uppercase tracking-wider">Permitido</span>}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </div>
+                    <div className="pt-4 border-t border-slate-700 mt-4">
+                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Segurança</h4>
+                        <button 
+                            onClick={async () => {
+                                if(!window.confirm(`Deseja redefinir a senha de ${editingUserPermissions.name}? O acesso atual será revogado.`)) return;
+                                
+                                const newPassword = Math.random().toString(36).slice(-8) + "!Aa1";
+                                try {
+                                    const { error } = await supabase.functions.invoke('reset-password', {
+                                        body: { email: editingUserPermissions.email, newPassword }
+                                    });
+                                    
+                                    if(error) throw error;
+                                    
+                                    setCreatedUserCredentials({ email: editingUserPermissions.email, newPassword });
+                                    setEditingUserPermissions(null); // Close edit mode to show success overlay purely
+                                    // Keep Manage Users Modal open though? Yes, success overlay is inside or on top? 
+                                    // Success overlay is a separate Modal controlled by 'createdUserCredentials'.
+                                    // It will show up on top or replace the current view if z-index is handled or if they stack.
+                                    // Actually, let's keep ManageUsersModal open, the Success Modal will appear on top of it.
+                                    
+                                } catch(e: any) {
+                                    console.error("Error resetting password:", e);
+                                    const msg = e.context?.json?.error || e.message || "Erro desconhecido";
+                                    alert(`Erro ao redefinir senha: ${msg}`);
+                                }
+                            }}
+                            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white border border-slate-700 py-2.5 rounded-xl transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            Redefinir Senha e Gerar Credenciais
+                        </button>
+                    </div>
+
+                    <button 
+                        onClick={() => setEditingUserPermissions(null)}
+                        className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2.5 rounded-xl transition-colors mt-2"
+                    >
+                        Concluir Edição
+                    </button>
+              </div>
+          ) : (
+            <div className="flex flex-col min-h-[60vh] max-h-[80vh]">
+                <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                    <div className="flex justify-between items-center mb-6 flex-shrink-0 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Membros da Equipe ({users.length})</h3>
+                            <div className="text-xs text-gray-500 mt-1">
+                                {users.filter(u => u.role === 'admin').length} Admins • {users.filter(u => u.role === 'user').length} Criativos
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onClick={() => setViewingAddMemberForm(true)}
+                            className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent-hover text-white text-sm font-bold py-2 px-4 rounded-lg transition-all shadow-lg shadow-brand-accent/20"
+                        >
+                            <PlusIcon className="w-4 h-4" /> Novo Membro
+                        </button>
+                    </div>
+
+                    <div className="bg-slate-900/50 rounded-xl border border-slate-700 overflow-hidden flex-1 relative">
+                        {/* Scrollable Container with Custom Scrollbar */}
+                        <div className="absolute inset-0 overflow-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                            <table className="w-full text-left border-collapse min-w-[600px]">
+                                <thead className="bg-slate-800 sticky top-0 z-10 shadow-lg">
+                                    <tr>
+                                        <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap bg-slate-800">Membro</th>
+                                        <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap bg-slate-800">Cargo</th>
+                                        <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap bg-slate-800">Acesso</th>
+                                        <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right whitespace-nowrap bg-slate-800">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700/50">
+                                    {users.map(user => {
+                                        const allowedNames = clients
+                                            .filter(c => user.allowedClientIds.includes(c.id))
+                                            .map(c => c.name);
+                                        
+                                        return (
+                                            <tr key={user.email} className="hover:bg-slate-800/50 transition-colors group">
+                                                <td className="p-4 align-top">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${user.role === 'admin' ? 'bg-amber-500 text-black' : 'bg-slate-700 text-white'}`}>
+                                                            {(user.name || user.email || '?').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="font-bold text-white text-sm truncate max-w-[200px]" title={user.name || user.email}>{user.name || 'Sem Nome'}</span>
+                                                            <span className="text-xs text-gray-500 truncate max-w-[200px]" title={user.email}>{user.email}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 align-top">
+                                                    <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${user.role === 'admin' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : user.role === 'manager' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-slate-700 text-gray-300 border-slate-600'}`}>
+                                                        {user.role}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 align-top">
+                                                    {user.role === 'admin' ? (
+                                                        <div className="flex items-center gap-1.5 text-xs text-emerald-400/80 bg-emerald-500/5 px-2 py-1 rounded self-start inline-flex whitespace-nowrap">
+                                                            <ShieldCheckIcon className="w-3 h-3" />
+                                                            <span>Acesso Total</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-full min-w-[200px]">
+                                                            {allowedNames.length > 0 ? (
+                                                                <div className="flex flex-wrap gap-1.5">
+                                                                    {allowedNames.map(name => (
+                                                                        <span key={name} className="inline-block px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-gray-300 whitespace-nowrap">{name}</span>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-red-400/60 text-xs italic flex items-center gap-1 whitespace-nowrap"><KeyIcon className="w-3 h-3"/> Sem acesso</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="p-4 align-top text-right">
+                                                     <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                        {user.role === 'user' && (
+                                                            <button 
+                                                                onClick={() => setEditingUserPermissions(user)}
+                                                                className="p-1.5 bg-slate-800 hover:bg-brand-accent text-gray-400 hover:text-white rounded border border-slate-700 transition-colors"
+                                                                title="Editar Permissões"
+                                                            >
+                                                                <PencilIcon className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                        
+                                                        {currentUser.role === 'admin' && user.email !== currentUser.email && (
+                                                            <button 
+                                                                onClick={async () => {
+                                                                    if(!window.confirm(`Tem certeza que deseja remover ${user.name}?`)) return;
+                                                                    try {
+                                                                        const { error } = await supabase.functions.invoke('delete-user', {
+                                                                            body: { userId: user.id }
+                                                                        });
+
+                                                                        if (error) throw error;
+
+                                                                        alert("Usuário removido com sucesso.");
+                                                                        fetchData();
+                                                                    } catch (e: any) {
+                                                                        console.error("Error deleting user:", e);
+                                                                        const msg = e.context?.json?.error || e.message || "Erro desconhecido";
+                                                                        alert(`Erro ao remover usuário: ${msg}`);
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 bg-slate-800 hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-400 text-gray-400 rounded border border-slate-700 transition-colors"
+                                                                title="Remover Usuário"
+                                                            >
+                                                                <TrashIcon className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                     </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    {users.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="p-8 text-center text-gray-500 italic">Nenhum membro encontrado.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </header>
-
-                <div className="p-8 max-w-7xl mx-auto w-full">
-                    {view === 'users' && user.role === 'superuser' && (
-                        <UserManagement currentUser={user} />
-                    )}
-
-                    {view === 'dashboard' && (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-gradient-to-br from-primary to-orange-400 rounded-2xl p-6 text-white shadow-lg">
-                                    <h3 className="font-bold text-lg opacity-90">Total de Arquivos</h3>
-                                    <p className="text-4xl font-display font-bold mt-2">1,204</p>
-                                    <p className="text-xs mt-2 opacity-75">Update hoje</p>
-                                </div>
-                                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                                    <h3 className="font-bold text-lg text-secondary">Pastas Ativas</h3>
-                                    <p className="text-4xl font-display font-bold mt-2 text-gray-800">24</p>
-                                </div>
-                                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                                    <h3 className="font-bold text-lg text-secondary">Aprovações</h3>
-                                    <p className="text-4xl font-display font-bold mt-2 text-gray-800">8</p>
-                                    <p className="text-xs text-primary mt-2">Pendentes</p>
-                                </div>
-                            </div>
-
-                            <ActivityTable logs={logs} />
-                        </div>
-                    )}
-
-                    {view === 'albums' && (
-                        <div className="animate-fade-in">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="font-display font-bold text-2xl text-secondary">
-                                    {breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Meus Álbuns'}
-                                </h2>
-                                <div className="flex gap-3">
-                                    {currentFolderId && (
-                                        <button 
-                                            onClick={() => setIsUploadOpen(true)}
-                                            className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                                        >
-                                            <UploadModal 
-                                                isOpen={isUploadOpen} 
-                                                onClose={() => setIsUploadOpen(false)}
-                                                onUpload={handleUpload}
-                                            />
-                                            <FolderPlus className="w-5 h-5" />
-                                            Upload Fotos
-                                        </button>
-                                    )}
-                                    <button 
-                                        onClick={handleCreateFolder}
-                                        className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-colors"
-                                    >
-                                        <FolderPlus className="w-5 h-5" />
-                                        Nova Pasta
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Folders Grid */}
-                            {folders.length > 0 && (
-                                <div className="mb-8">
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Pastas</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                        {folders.map(folder => (
-                                            <div 
-                                                key={folder.id}
-                                                onClick={() => handleFolderClick(folder)}
-                                                className="group relative bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-primary/30 cursor-pointer transition-all flex flex-col justify-between min-h-[120px]"
-                                            >
-                                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleEditFolder(folder); }}
-                                                        className="p-1.5 bg-gray-100 rounded-full hover:bg-white hover:text-primary hover:shadow-sm"
-                                                    >
-                                                        <Edit2 className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <div className="w-10 h-10 bg-blue-50 text-secondary rounded-lg flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                                                            <FolderIcon className="w-5 h-5" />
-                                                        </div>
-                                                    </div>
-                                                    <p className="font-semibold text-gray-700 truncate group-hover:text-primary transition-colors">{folder.name}</p>
-                                                </div>
-                                                
-                                                {folder.note && (
-                                                    <p className="text-xs text-gray-400 mt-2 line-clamp-2 border-t border-gray-50 pt-2 leading-relaxed">
-                                                        {folder.note}
-                                                    </p>
-                                                )}
-                                                
-                                                {!folder.note && (
-                                                    <p className="text-xs text-gray-300 mt-1 italic">Items privados</p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Files Grid */}
-                            {currentFolderId && (
-                                <div>
-                                    <div className="flex justify-between items-end mb-4">
-                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Arquivos ({files.length})</h3>
-                                    </div>
-                                    
-                                    {files.length === 0 ? (
-                                        <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                                            <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                            <p className="text-gray-400 font-medium">Pasta vazia. Comece fazendo um upload.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                            {files.map(file => (
-                                                <div 
-                                                    key={file.id} 
-                                                    onClick={() => setSelectedFile(file)}
-                                                    className="group relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
-                                                >
-                                                    <div className="aspect-square relative overflow-hidden bg-gray-100">
-                                                        <img src={file.url} alt={file.name} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
-                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); handleRenameFile(file.id, file.name); }}
-                                                                className="p-2 bg-white rounded-full text-gray-700 hover:text-primary transition-colors shadow-sm" title="Renomear"
-                                                            >
-                                                                <Edit2 className="w-4 h-4" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
-                                                                className="p-2 bg-white rounded-full text-red-500 hover:bg-red-50 transition-colors shadow-sm" title="Excluir"
-                                                            >
-                                                                <LogOut className="w-4 h-4" /> 
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="p-3">
-                                                        <div className="flex justify-between items-start">
-                                                            <div>
-                                                                <p className="font-semibold text-sm text-gray-800 truncate w-32" title={file.name}>{file.name}</p>
-                                                                <p className="text-xs text-gray-400">{file.size}</p>
-                                                            </div>
-                                                        </div>
-                                                        {file.note && (
-                                                            <div className="mt-2 text-xs bg-yellow-50 text-yellow-700 p-1.5 rounded border border-yellow-100">
-                                                                <span className="font-bold">Obs:</span> {file.note}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
-            </main>
-            
-            {/* Detail Modal */}
-            <FileDetailModal 
-                file={selectedFile} 
-                onClose={() => setSelectedFile(null)} 
+            </div>
+          )}
+      </Modal>
+
+       {/* Credential Success Modal */}
+       <Modal 
+        isOpen={!!createdUserCredentials} 
+        onClose={() => setCreatedUserCredentials(null)} 
+        title="Usuário Criado!"
+       >
+        {createdUserCredentials && (
+            <div className="space-y-6">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-start gap-3">
+                    <ShieldCheckIcon className="w-6 h-6 text-emerald-400 mt-1 flex-shrink-0" />
+                    <div>
+                        <h4 className="text-emerald-400 font-bold text-lg">Sucesso!</h4>
+                        <p className="text-gray-300 text-sm">O usuário foi criado e já pode acessar o sistema. Envie os dados abaixo para ele.</p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="relative group">
+                        <label className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1 block">E-mail de Acesso</label>
+                        <div className="flex gap-2">
+                             <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-white font-mono text-sm break-all">
+                                {createdUserCredentials.email}
+                             </div>
+                             <button 
+                                onClick={() => navigator.clipboard.writeText(createdUserCredentials.email)}
+                                className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-lg border border-slate-700 transition-colors"
+                                title="Copiar E-mail"
+                             >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                             </button>
+                        </div>
+                    </div>
+
+                    <div className="relative group">
+                        <label className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1 block">Senha Temporária</label>
+                        <div className="flex gap-2">
+                             <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-white font-mono text-xl tracking-wider font-bold">
+                                {createdUserCredentials.password}
+                             </div>
+                             <button 
+                                onClick={() => navigator.clipboard.writeText(createdUserCredentials.password)}
+                                className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-lg border border-slate-700 transition-colors"
+                                title="Copiar Senha"
+                             >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                             </button>
+                        </div>
+                        <p className="text-xs text-amber-500/80 mt-1 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            Peça para alterar a senha no primeiro acesso (futuramente).
+                        </p>
+                    </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-700 grid grid-cols-2 gap-3">
+                    <button
+                        onClick={() => {
+                            const text = `Olá! Aqui estão suas credenciais de acesso ao GRIDD Marketing 360:\n\nLink: ${window.location.origin}\nE-mail: ${createdUserCredentials.email}\nSenha: ${createdUserCredentials.password}`;
+                            navigator.clipboard.writeText(text);
+                            alert("Texto copiado para a área de transferência!");
+                        }}
+                        className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold transition-colors"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                        Copiar Tudo
+                    </button>
+                    <button
+                        onClick={() => {
+                             const text = `Olá! Aqui estão suas credenciais de acesso ao GRIDD Marketing 360:\n\nLink: ${window.location.origin}\nE-mail: ${createdUserCredentials.email}\nSenha: ${createdUserCredentials.password}`;
+                             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                        className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-[#25D366]/20"
+                    >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                        Enviar no WhatsApp
+                    </button>
+                    <button
+                        onClick={() => setCreatedUserCredentials(null)}
+                         className="col-span-2 mt-2 bg-transparent text-gray-500 hover:text-white py-2 text-sm transition-colors"
+                    >
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        )}
+       </Modal>
+  
+       {/* Add Photo Modal */}
+      <Modal 
+        isOpen={isAddPhotoModalOpen} 
+        onClose={() => {
+            if(!isUploading) {
+                setAddPhotoModalOpen(false);
+                setPhotoError('');
+                setNewPhotoFiles([]);
+                setNewPhotoTags('');
+                setPhotoPreviews([]);
+            } 
+        }} 
+        title={`Novo Arquivo para ${selectedClient?.name}`}
+      >
+        <form onSubmit={(e) => { e.preventDefault(); handleAddPhoto(); }}>
+          <div className="mb-4">
+            <label htmlFor="photoFile" className="block text-gray-400 text-sm font-bold mb-2">Arquivo Criativo</label>
+            <div className="relative">
+                <input 
+                    type="file" 
+                    id="photoFile" 
+                    accept="image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
+                    onChange={handleFileChange} 
+                    className="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-brand-accent file:text-white hover:file:bg-brand-accent-hover disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" 
+                    disabled={isUploading} 
+                    required 
+                    multiple
+                />
+            </div>
+            {photoError && <p className="text-red-400 text-xs mt-2 bg-red-400/10 p-1.5 rounded">{photoError}</p>}
+          </div>
+
+          <div className="mb-6">
+            <label htmlFor="photoTags" className="block text-gray-400 text-sm font-bold mb-2 flex items-center gap-2">
+                <TagIcon className="w-4 h-4 text-brand-accent" />
+                Tags
+            </label>
+            <input 
+                id="photoTags"
+                type="text"
+                value={newPhotoTags}
+                onChange={(e) => setNewPhotoTags(e.target.value)}
+                placeholder="Ex: cozinha, moderna, 2024 (separadas por vírgula)"
+                className="shadow appearance-none border border-slate-700 rounded-xl w-full py-3 px-4 bg-slate-900 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent transition-all"
+                disabled={isUploading}
             />
-        </div>
-    );
-}
+            <p className="text-xs text-gray-500 mt-1">Tags ajudam a filtrar fotos no álbum depois.</p>
+          </div>
+
+          {photoPreviews.length > 0 && (
+              <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-slate-800 p-2 rounded-xl border border-slate-700">
+                  {photoPreviews.map((preview, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 bg-slate-900 rounded border border-white/5">
+                          {preview.type === 'image' ? (
+                               <img src={preview.url} alt={preview.name} className="w-8 h-8 rounded object-cover" />
+                          ) : (
+                               <div className="w-8 h-8 rounded bg-slate-700 flex items-center justify-center">
+                                   <FileIcon className="w-4 h-4 text-gray-400" />
+                               </div>
+                          )}
+                          <span className="text-xs text-gray-300 truncate">{preview.name}</span>
+                      </div>
+                  ))}
+              </div>
+          )}
+          
+          {isUploading ? (
+              <div className="w-full">
+                  <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-brand-accent uppercase tracking-wider">Enviando Asset...</span>
+                      <span className="text-xs font-bold text-gray-400">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-brand-accent to-purple-400 h-2 rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(139,92,246,0.5)]" style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+              </div>
+          ) : (
+            <button type="submit" className="w-full flex justify-center items-center gap-2 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-brand-accent/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled={newPhotoFiles.length === 0}>
+                {newPhotoFiles.length > 1 ? `Enviar ${newPhotoFiles.length} Arquivos` : 'Enviar Arquivo'} <CameraIcon className="w-5 h-5" />
+            </button>
+          )}
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+
+
+export default App;

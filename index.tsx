@@ -1,87 +1,27 @@
-// ============================================================================
-// POLYFILLS - DEVE SER IMPORTADO PRIMEIRO!
-// ============================================================================
-import './utils/processPolyfill';
+/// <reference types="vite/client" />
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import AppNew from './AppNew';
-import ErrorBoundary from './components/ErrorBoundary';
-import { ToastProvider, ToastContainer } from './components/ToastNotification';
-import logger from './utils/logger';
-import errorHandler from './utils/errorHandler';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
-import { getEnvConfig } from './config/env';
+import App from './App';
 
-// ============================================================================
-// Inicialização de Variáveis de Ambiente - DEVE SER ANTES DE QUALQUER OUTRO CÓDIGO
-// ============================================================================
-import { initializeEnvironment, setupErrorHandlers } from './services/initialization';
 
-// Inicializar variáveis de ambiente
-initializeEnvironment();
-
-// Inicializar e validar configurações
-try {
-  logger.info('Iniciando aplicação...', undefined, 'App');
-  logger.info('Configurações carregadas com sucesso', undefined, 'App');
-  setupErrorHandlers();
-} catch (error) {
-  logger.critical('Erro na inicialização de configurações', error, undefined, 'App');
-  
-  // Obter modo debug de forma segura via wrapper
-  const isDebug = getEnvConfig().debug;
-  
-  // Mostrar erro ao usuário
-  document.body.innerHTML = `
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Arial, sans-serif;">
-      <div style="text-align: center; max-width: 500px;">
-        <h1 style="color: #ff6b26; margin-bottom: 20px;">⚠️ Erro de Inicialização</h1>
-        <p style="color: #333; font-size: 16px; line-height: 1.6;">
-          ${
-            isDebug
-              ? `<pre style="text-align: left; background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">${String(error)}</pre>`
-              : 'A aplicação não pôde ser inicializada. Verifique as variáveis de ambiente.'
-          }
-        </p>
-        <p style="color: #666; font-size: 14px; margin-top: 20px;">
-          Consulte a documentação de configuração para mais informações.
-        </p>
-      </div>
-    </div>
-  `;
-  
-  // Não chamar process.exit() em ambiente de browser
-  throw new Error('Erro de inicialização da aplicação');
+// Suppress console logs in production
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  console.warn = () => {};
+  console.error = () => {}; // Optional: also hide warnings to be very quiet
 }
-
-// ============================================================================
-// Setup de Handlers Globais
-// ============================================================================
-
-// Registrar listeners de erro para toast notifications
-errorHandler.onError((error) => {
-  logger.warn(`Erro capturado pelo handler: ${error.userMessage}`, undefined, 'ErrorHandler');
-});
-
-// ============================================================================
-// Renderização da Aplicação
-// ============================================================================
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error('Could not find root element to mount to');
+  throw new Error("Could not find root element to mount to");
 }
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <ToastProvider>
-        <AppNew />
-        <ToastContainer />
-      </ToastProvider>
-    </ErrorBoundary>
+    <App />
   </React.StrictMode>
 );

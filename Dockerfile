@@ -1,13 +1,14 @@
-# Build Stage
-FROM node:20-alpine as build
+# Stage 1: Build the application
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# Copy package files ensuring both package.json and package-lock.json are copied
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm install
+# Using ci for more reliable builds
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -15,21 +16,17 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Production Stage
+# Stage 2: Serve the application with Nginx
 FROM nginx:alpine
 
-# Copy custom nginx configuration
+# Copy built assets from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy build artifacts from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy env generator script
-COPY env.sh /docker-entrypoint.d/40-env-generator.sh
-RUN chmod +x /docker-entrypoint.d/40-env-generator.sh
 
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx (scripts in /docker-entrypoint.d/ run automatically)
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

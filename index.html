@@ -1,48 +1,50 @@
+
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gridd360 Hub de Marketing</title>
+    <title>GRIDD Marketing 360 - Gestão de Agência</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700;800&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
-        darkMode: "class",
         theme: {
           extend: {
             colors: {
-              primary: "#FF6B26", // Gridd360 Orange
-              "primary-hover": "#E65A1F",
-              secondary: "#101663", // Gridd360 Deep Blue
-              "secondary-light": "#1E268C",
-              surface: "#FFFFFF",
-              background: "#F3F4F6",
+              'brand-dark': '#0A0A32', // Primary Navy
+              'brand-darker': '#00000A', // Background Dark
+              'brand-light': '#E6E6E6', // Light Gray Text
+              'brand-accent': '#FF7A1A', // Accent Orange
+              'brand-accent-hover': '#FF8A2A', // Accent Orange Hover
+              'brand-royal': '#1E1E8C', // Secondary Royal
+              'brand-electric': '#2828B4', // Highlight Electric
             },
             fontFamily: {
-              display: ["Montserrat", "sans-serif"],
-              body: ["Open Sans", "sans-serif"],
-            },
+              sans: ['Inter', 'sans-serif'],
+              display: ['Montserrat', 'sans-serif'],
+              body: ['Poppins', 'sans-serif'],
+            }
           },
         },
-      };
+      }
     </script>
   <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
 </script>
-
+<link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-background text-slate-800 font-body antialiased">
+  <body class="bg-brand-darker text-slate-200">
     <div id="root"></div>
-    <!-- Injected by env.sh at runtime -->
-    <script src="/env-config.js"></script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

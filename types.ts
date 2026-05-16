@@ -1,73 +1,60 @@
-// === DATABASE STRUCTURE DEFINITIONS ===
 
-export type UserRole = 'superuser' | 'client';
-export type AccessLevel = 'viewer' | 'editor' | 'admin'; // 'viewer' = read, 'editor' = write, 'admin' = all
-
-export interface FolderPermission {
-  folderId: string;
-  accessLevel: AccessLevel;
+export interface Photo {
+  id: string;
+  url: string;
+  uploadedBy: string;
+  timestamp: string;
+  tags: string[]; // Tags para categorização e busca
 }
 
-export interface User {
+export interface Client {
   id: string;
   name: string;
-  email: string;
-  role: UserRole;
-  avatarUrl: string;
-  permissions: FolderPermission[]; // Explicit folder permissions
-}
-
-export interface FileAsset {
-  id: string;
-  folderId: string;
-  name: string;
-  url: string; // URL to storage
-  type: 'image' | 'video' | 'document';
-  size: string;
-  uploadedBy: string; // User ID
-  createdAt: string; // ISO Date
-  note?: string; // User annotation
+  description: string; // Descrição da campanha ou do cliente
+  coverImage: string; // Logo ou imagem da campanha principal
+  photos: Photo[]; // Arquivos criativos
+  folders?: Folder[];
 }
 
 export interface Folder {
+    id: string;
+    clientId: string;
+    parentId: string | null;
+    name: string;
+    createdAt: string;
+    createdBy: string;
+    thumbnailUrl?: string; // Optional custom thumbnail
+}
+
+export interface Photo {
   id: string;
-  parentId: string | null; // Null if root
+  url: string;
+  uploadedBy: string;
+  timestamp: string;
+  tags: string[];
+  folderId?: string;
+  mimeType?: string;
+  size?: number;
+  originalName?: string;
+}
+
+export interface User {
+  id?: string;
+  email: string;
+  role: 'admin' | 'manager' | 'user';
   name: string;
-  note?: string; // Folder description/annotation
-  ownerId?: string; // If null, global/superuser
+  allowedClientIds?: string[]; // IDs dos clientes que este usuário pode acessar
 }
 
 export interface ActivityLog {
-  id: string;
-  userId: string;
-  userName: string;
-  action: 'UPLOAD' | 'DELETE' | 'RENAME' | 'CREATE_FOLDER' | 'USER_CREATE' | 'PERM_UPDATE' | 'UPDATE_FOLDER';
-  targetName: string; // Name of file or folder
-  timestamp: string;
-  details?: string;
+    id: string;
+    client_id: string;
+    folder_id?: string;
+    user_id: string;
+    action_type: 'upload' | 'delete' | 'create_folder' | 'delete_folder';
+    details: any;
+    timestamp: string;
+    user?: { name: string }; // For display join
 }
 
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  timestamp: string;
-}
-
-// === PORTFOLIO ===
-
-export type PortfolioCategoryType = 'Eventos' | 'Campanhas' | 'Branding';
-
-export interface PortfolioItem {
-  id: string;
-  title: string;
-  category: PortfolioCategoryType;
-  client: string;
-  subtitle?: string; // e.g. "Vendas • Varejo"
-  description: string;
-  imageUrl: string;
-  year?: string;
-  tags: string[];
-  isHighlight?: boolean;
-}
+export type View = 'dashboard' | 'client';
